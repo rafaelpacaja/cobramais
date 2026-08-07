@@ -1,5 +1,5 @@
 import React from 'react';
-import { Download, TrendingUp, PieChart as PieChartIcon, CheckCircle2, Clock, AlertTriangle, Printer, ShieldAlert } from 'lucide-react';
+import { Download, TrendingUp, PieChart as PieChartIcon, CheckCircle2, Clock, AlertTriangle, Printer } from 'lucide-react';
 import { Cobranca, IndicadoresFinanceiros } from '../types';
 import { formatCurrency } from '../utils/whatsapp';
 import { TipoRelatorioPDF } from './RelatorioBaixadasPDFModal';
@@ -56,58 +56,31 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
 
   return (
     <div className="w-full min-h-[101vh] space-y-4 px-4 pt-3 pb-24 animate-fade-in">
-      {/* Top Header Padronizado */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
+      {/* Top Header Simplificado */}
+      <div className="flex items-center justify-between gap-2 w-full">
         <div className="min-w-0 flex-1">
           <h2 className="text-xl font-extrabold text-slate-100 truncate">
             Relatórios e Métricas
           </h2>
           <p className="text-xs text-slate-400 truncate">
-            Análise financeira, quitações, a vencer e cobranças atrasadas
+            Análise financeira e emissão de relatórios
           </p>
         </div>
 
-        {/* Botões de Ação de Impressão PDF e Planilha CSV */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none shrink-0 w-full sm:w-auto">
+        {/* Único Botão de PDF + Botão CSV */}
+        <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => onOpenRelatorioPDF('quitadas')}
-            className="h-9 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-md shadow-emerald-900/30 transition-all flex items-center justify-center gap-1 whitespace-nowrap active:scale-95 shrink-0"
-            title="Gerar Relatório PDF de Contas Quitadas"
-          >
-            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-            <span>Quitadas</span>
-          </button>
-
-          <button
-            onClick={() => onOpenRelatorioPDF('em_aberto')}
-            className="h-9 px-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-extrabold text-xs shadow-md shadow-amber-900/30 transition-all flex items-center justify-center gap-1 whitespace-nowrap active:scale-95 shrink-0"
-            title="Gerar Relatório PDF de Contas A Vencer (Pendentes)"
-          >
-            <Clock className="w-3.5 h-3.5 shrink-0" />
-            <span>A Vencer</span>
-          </button>
-
-          <button
-            onClick={() => onOpenRelatorioPDF('atrasados')}
-            className="h-9 px-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs shadow-md shadow-rose-900/30 transition-all flex items-center justify-center gap-1 whitespace-nowrap active:scale-95 shrink-0"
-            title="Gerar Relatório PDF de Contas Vencidas em Atraso"
-          >
-            <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
-            <span>Atrasadas</span>
-          </button>
-
-          <button
-            onClick={() => onOpenRelatorioPDF('completo')}
-            className="h-9 px-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-md shadow-indigo-900/30 transition-all flex items-center justify-center gap-1 whitespace-nowrap active:scale-95 shrink-0"
-            title="Gerar Relatório Geral Consolidado em PDF"
+            className="h-9 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-md shadow-emerald-900/30 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap active:scale-95 cursor-pointer"
+            title="Abrir Central de Relatórios em PDF"
           >
             <Printer className="w-3.5 h-3.5 shrink-0" />
-            <span>Geral</span>
+            <span>PDF Relatórios</span>
           </button>
 
           <button
             onClick={handleExportCSV}
-            className="h-9 px-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-extrabold text-xs transition-all flex items-center justify-center gap-1 whitespace-nowrap active:scale-95 shrink-0"
+            className="h-9 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 whitespace-nowrap active:scale-95 cursor-pointer"
             title="Exportar planilha CSV"
           >
             <Download className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
