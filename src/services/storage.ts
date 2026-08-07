@@ -94,13 +94,52 @@ export function updateOverdueStatuses(cobrancas: Cobranca[]): Cobranca[] {
     if (c.status === 'pago' || c.status === 'cancelado') return c;
 
     const isoVenc = parseDateToISO(c.dataVencimento);
-    // Se a data de vencimento for hoje ou anterior a hoje, considera ATRASADO se não pago
     if (isoVenc <= currentDate) {
       return { ...c, status: 'atrasado' as const };
     } else {
       return { ...c, status: 'pendente' as const };
     }
   });
+}
+
+// Integramos sincronização com o Neon PostgreSQL (Vercel Serverless Function /api/db)
+export async function syncWithNeonDatabase() {
+  try {
+    const res = await fetch('/api/db');
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data && data.connected) {
+      if (Array.isArray(data.clientes) && data.clientes.length > 0) {
+        saveClientes(data.clientes, false);
+      }
+      if (Array.isArray(data.cobrancas) && data.cobrancas.length > 0) {
+        saveCobrancas(data.cobrancas, false);
+      }
+      if (data.config) {
+        saveConfig(data.config, false);
+      }
+      return data;
+    }
+  } catch (err) {
+    // Ambiente local sem backend de produção
+  }
+  return null;
+}
+
+export async function pushToNeonDatabase() {
+  try {
+    const config = getConfig();
+    const clientes = getClientes();
+    const cobrancas = getCobrancas();
+
+    await fetch('/api/db', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ config, clientes, cobrancas })
+    });
+  } catch (err) {
+    // Falha silenciosa em caso de offline
+  }
 }
 
 export function getClientes(): Cliente[] {
@@ -117,8 +156,11 @@ export function getClientes(): Cliente[] {
   }
 }
 
-export function saveClientes(clientes: Cliente[]): void {
+export function saveClientes(clientes: Cliente[], triggerSync = true): void {
   localStorage.setItem(CLIENTES_STORAGE_KEY, JSON.stringify(clientes));
+  if (triggerSync) {
+    pushToNeonDatabase();
+  }
 }
 
 export function getCobrancas(): Cobranca[] {
@@ -133,7 +175,7 @@ export function getCobrancas(): Cobranca[] {
 
     const updatedList = updateOverdueStatuses(list);
     if (JSON.stringify(updatedList) !== JSON.stringify(list)) {
-      saveCobrancas(updatedList);
+      saveCobrancas(updatedList, false);
     }
 
     return updatedList;
@@ -143,8 +185,11 @@ export function getCobrancas(): Cobranca[] {
   }
 }
 
-export function saveCobrancas(cobrancas: Cobranca[]): void {
+export function saveCobrancas(cobrancas: Cobranca[], triggerSync = true): void {
   localStorage.setItem(COBRANCAS_STORAGE_KEY, JSON.stringify(cobrancas));
+  if (triggerSync) {
+    pushToNeonDatabase();
+  }
 }
 
 export function getConfig(): AppConfig {
@@ -169,8 +214,11 @@ export function getConfig(): AppConfig {
   }
 }
 
-export function saveConfig(config: AppConfig): void {
+export function saveConfig(config: AppConfig, triggerSync = true): void {
   localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(config));
+  if (triggerSync) {
+    pushToNeonDatabase();
+  }
 }
 
 export function calcularIndicadores(cobrancas: Cobranca[]): IndicadoresFinanceiros {

@@ -8,6 +8,8 @@ import {
   saveConfig, 
   calcularIndicadores,
   updateOverdueStatuses,
+  syncWithNeonDatabase,
+  pushToNeonDatabase,
   AppConfig 
 } from './services/storage';
 import { Cliente, Cobranca, FormaPagamento, TabType } from './types';
@@ -55,7 +57,7 @@ export const App: React.FC = () => {
   const [reciboConfetti, setReciboConfetti] = useState(false);
   const [isRelatorioPDFOpen, setIsRelatorioPDFOpen] = useState(false);
 
-  // Carrega dados iniciais do LocalStorage e limpa nomes e telefones com valores entre parênteses
+  // Carrega dados iniciais do LocalStorage e sincroniza com o Neon Database
   useEffect(() => {
     const listClientes = getClientes();
     const updatedClientes = listClientes.map(cli => {
@@ -96,9 +98,21 @@ export const App: React.FC = () => {
 
     setClientes(updatedClientes);
     setCobrancas(updatedCobrancas);
-    saveClientes(updatedClientes);
-    saveCobrancas(updatedCobrancas);
+    saveClientes(updatedClientes, false);
+    saveCobrancas(updatedCobrancas, false);
     setConfig(getConfig());
+
+    // Sincroniza em segundo plano com o banco Neon no Vercel
+    syncWithNeonDatabase().then(neonRes => {
+      if (neonRes && neonRes.connected) {
+        setClientes(getClientes());
+        setCobrancas(getCobrancas());
+        setConfig(getConfig());
+      } else {
+        // Envia estado atual para popular o Neon se estiver vazio
+        pushToNeonDatabase();
+      }
+    });
   }, []);
 
   // Recalcula Indicadores
