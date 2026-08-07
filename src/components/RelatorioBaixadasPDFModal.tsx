@@ -105,7 +105,7 @@ export function gerarEImprimirRelatorioPDF(
         }
 
         return `
-          <tr style="background-color: ${rowBg}; font-size: 10px; break-inside: avoid; page-break-inside: avoid;">
+          <tr style="background-color: ${rowBg}; font-size: 10px;">
             <td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold; color: #64748b;">${idx + 1}</td>
             <td style="padding: 5px 6px; border: 1px solid #cbd5e1; font-weight: bold; color: #0f172a;">${item.clienteNome}</td>
             <td style="padding: 5px 6px; border: 1px solid #cbd5e1; font-family: monospace; font-size: 9px; color: #475569;">${doc}</td>
@@ -151,14 +151,20 @@ export function gerarEImprimirRelatorioPDF(
           align-items: flex-start;
           border-bottom: 3px solid #0f172a;
           padding-bottom: 8px;
-          margin-bottom: 14px;
-          break-inside: avoid;
-          page-break-inside: avoid;
+          margin-bottom: 12px;
         }
         table {
           width: 100%;
           border-collapse: collapse;
           margin-bottom: 12px;
+        }
+        thead {
+          display: table-header-group;
+        }
+        tfoot {
+          display: table-footer-group;
+        }
+        tr {
           break-inside: avoid;
           page-break-inside: avoid;
         }
