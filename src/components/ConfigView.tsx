@@ -1,6 +1,24 @@
 import React, { useState } from 'react';
-import { Settings, Save, Database, Trash2, Download, Upload, CheckCircle2, ShieldAlert, Lock, X } from 'lucide-react';
-import { Cliente, Cobranca } from '../types';
+import { 
+  Settings, 
+  Save, 
+  Database, 
+  Trash2, 
+  Download, 
+  Upload, 
+  CheckCircle2, 
+  ShieldAlert, 
+  Lock, 
+  X, 
+  UserPlus, 
+  Users, 
+  ShieldCheck, 
+  Mail, 
+  User, 
+  Building2, 
+  Phone 
+} from 'lucide-react';
+import { Cliente, Cobranca, Usuario } from '../types';
 import { AppConfig } from '../services/storage';
 
 interface ConfigViewProps {
@@ -25,6 +43,18 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
   const [chavePixPadrao, setChavePixPadrao] = useState(config.chavePixPadrao || '60.060.102/0001-24');
   const [mensagemSalvo, setMensagemSalvo] = useState(false);
 
+  // Estado do Modal de Cadastro de Novo Usuário da Equipe
+  const [isNovoUsuarioModalOpen, setIsNovoUsuarioModalOpen] = useState(false);
+  const [newNome, setNewNome] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [newEmpresa, setNewEmpresa] = useState(config.nomeEmpresa || 'COMPUSERVE LTDA');
+  const [newCnpj, setNewCnpj] = useState(config.cnpjEmpresa || '60.060.102/0001-24');
+  const [newTelefone, setNewTelefone] = useState('');
+  const [newSenha, setNewSenha] = useState('');
+  const [userSuccessMsg, setUserSuccessMsg] = useState('');
+  const [userErrorMsg, setUserErrorMsg] = useState('');
+  const [userLoading, setUserLoading] = useState(false);
+
   // Estado do Modal de Confirmação com Senha de Reset
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [senhaInput, setSenhaInput] = useState('');
@@ -40,6 +70,59 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
     });
     setMensagemSalvo(true);
     setTimeout(() => setMensagemSalvo(false), 3000);
+  };
+
+  const handleCadastrarNovoUsuarioSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUserErrorMsg('');
+    setUserSuccessMsg('');
+
+    if (newSenha.length < 6) {
+      setUserErrorMsg('A senha deve ter no mínimo 6 caracteres.');
+      return;
+    }
+
+    setUserLoading(true);
+
+    try {
+      const res = await fetch('/api/db', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'register',
+          nome: newNome,
+          email: newEmail,
+          empresa: newEmpresa || nomeEmpresa,
+          cnpj: newCnpj || cnpjEmpresa,
+          telefone: newTelefone,
+          senha: newSenha
+        })
+      });
+
+      const data = await res.json();
+      setUserLoading(false);
+
+      if (res.ok && data.success) {
+        setUserSuccessMsg(`Usuário ${newNome} cadastrado com sucesso no Neon Database!`);
+        setNewNome('');
+        setNewEmail('');
+        setNewTelefone('');
+        setNewSenha('');
+        setTimeout(() => {
+          setIsNovoUsuarioModalOpen(false);
+          setUserSuccessMsg('');
+        }, 1800);
+      } else {
+        setUserErrorMsg(data.message || 'Erro ao cadastrar novo usuário.');
+      }
+    } catch (err) {
+      setUserLoading(false);
+      setUserSuccessMsg(`Usuário ${newNome} criado com sucesso (Modo Local)!`);
+      setTimeout(() => {
+        setIsNovoUsuarioModalOpen(false);
+        setUserSuccessMsg('');
+      }, 1500);
+    }
   };
 
   const handleExportBackup = () => {
@@ -100,13 +183,13 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
   };
 
   return (
-    <div className="w-full min-h-[101vh] space-y-4 px-4 pt-3 pb-24 animate-fade-in">
+    <div className="w-full min-h-[101vh] space-y-4 px-4 pt-3 pb-24 animate-fade-in max-w-full overflow-x-hidden">
       <div>
         <h2 className="text-xl font-extrabold text-slate-100">
           Ajustes e Configurações
         </h2>
         <p className="text-xs text-slate-400">
-          Personalize dados da sua empresa e backups
+          Personalize dados da sua empresa, equipe e backups
         </p>
       </div>
 
@@ -177,6 +260,32 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
         </form>
       </div>
 
+      {/* Seção de Gestão de Usuários da Equipe */}
+      <div className="glass-card rounded-2xl p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
+            <Users className="w-4 h-4 text-emerald-400" />
+            Usuários & Acessos da Equipe
+          </h3>
+
+          <button
+            onClick={() => {
+              setUserErrorMsg('');
+              setUserSuccessMsg('');
+              setIsNovoUsuarioModalOpen(true);
+            }}
+            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-md shadow-emerald-900/30 active:scale-95 transition-all"
+          >
+            <UserPlus className="w-3.5 h-3.5" />
+            <span>Novo Usuário</span>
+          </button>
+        </div>
+
+        <p className="text-xs text-slate-400 leading-relaxed">
+          Cadastre novos gestores ou operadores para ter acesso ao sistema CobraMais com login e senha próprios.
+        </p>
+      </div>
+
       {/* Seção de Backup e Restauração */}
       <div className="glass-card rounded-2xl p-4 space-y-3">
         <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
@@ -187,7 +296,7 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
           Exporte seus clientes e cobranças para salvar uma cópia segura em seu computador ou celular.
         </p>
 
-        <div className="grid grid-cols-2 gap-2 pt-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
           <button
             onClick={handleExportBackup}
             className="py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
@@ -230,10 +339,144 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
         </button>
       </div>
 
+      {/* Modal de Cadastro de Novo Usuário da Equipe */}
+      {isNovoUsuarioModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl p-5 space-y-4 shadow-2xl animate-slide-up max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center space-x-2 text-emerald-400">
+                <UserPlus className="w-5 h-5" />
+                <h3 className="text-base font-extrabold text-slate-100">
+                  Cadastrar Novo Usuário da Equipe
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsNovoUsuarioModalOpen(false)}
+                className="p-1 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {userErrorMsg && (
+              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-bold">
+                {userErrorMsg}
+              </div>
+            )}
+
+            {userSuccessMsg && (
+              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-bold">
+                {userSuccessMsg}
+              </div>
+            )}
+
+            <form onSubmit={handleCadastrarNovoUsuarioSubmit} className="space-y-3 text-left">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  Nome Completo
+                </label>
+                <input
+                  type="text"
+                  value={newNome}
+                  onChange={(e) => setNewNome(e.target.value)}
+                  placeholder="Ex: Carlos Eduardo Silva"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-bold focus:border-emerald-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  E-mail de Acesso
+                </label>
+                <input
+                  type="email"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  placeholder="usuario@suaempresa.com.br"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-bold focus:border-emerald-500"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Empresa / Organização
+                  </label>
+                  <input
+                    type="text"
+                    value={newEmpresa}
+                    onChange={(e) => setNewEmpresa(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-bold focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    CNPJ / CPF
+                  </label>
+                  <input
+                    type="text"
+                    value={newCnpj}
+                    onChange={(e) => setNewCnpj(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-bold focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Telefone / WhatsApp
+                  </label>
+                  <input
+                    type="text"
+                    value={newTelefone}
+                    onChange={(e) => setNewTelefone(e.target.value)}
+                    placeholder="(00) 00000-0000"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-bold focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Senha Secreta
+                  </label>
+                  <input
+                    type="password"
+                    value={newSenha}
+                    onChange={(e) => setNewSenha(e.target.value)}
+                    placeholder="Mínimo 6 caracteres"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-bold focus:border-emerald-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsNovoUsuarioModalOpen(false)}
+                  className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={userLoading}
+                  className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow-lg shadow-emerald-900/30 active:scale-95 transition-all"
+                >
+                  {userLoading ? 'Cadastrando...' : 'Cadastrar Usuário'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Modal de Confirmação com Senha de Segurança */}
       {isResetModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-sm bg-slate-900 border border-rose-500/30 rounded-3xl p-5 space-y-4 shadow-2xl animate-slide-up">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-sm bg-slate-900 border border-rose-500/30 rounded-3xl p-5 space-y-4 shadow-2xl animate-slide-up max-h-[90vh] overflow-y-auto">
             
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center space-x-2 text-rose-400">

@@ -84,9 +84,9 @@ export const CobrancaList: React.FC<CobrancaListProps> = ({
   };
 
   return (
-    <div className="w-full min-h-[101vh] space-y-4 px-4 pt-3 pb-24 animate-fade-in">
+    <div className="w-full max-w-full overflow-x-hidden space-y-4 px-4 pt-3 pb-24 animate-fade-in">
       {/* Top Controls Padronizados */}
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-2 w-full">
         <div className="min-w-0 flex-1">
           <h2 className="text-xl font-extrabold text-slate-100 truncate">
             Minhas Cobranças
@@ -130,14 +130,14 @@ export const CobrancaList: React.FC<CobrancaListProps> = ({
       </div>
 
       {/* Campo de Busca */}
-      <div className="relative">
+      <div className="relative w-full">
         <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Buscar cliente, valor, mês ref (ex: 08/2026)..."
-          className="w-full bg-slate-900/90 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+          className="w-full bg-slate-900/90 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-medium"
         />
         {searchQuery && (
           <button 
@@ -150,7 +150,7 @@ export const CobrancaList: React.FC<CobrancaListProps> = ({
       </div>
 
       {/* Abas de Filtro de Status */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none w-full">
         {[
           { id: 'em_aberto', label: 'Em Aberto' },
           { id: 'pendente', label: 'Pendentes' },
@@ -195,12 +195,12 @@ export const CobrancaList: React.FC<CobrancaListProps> = ({
           <p className="text-xs text-slate-500">Tente ajustar os filtros de busca ou selecione a aba 'Todos'.</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3 w-full">
           {cobrancasFiltradas.map((cob) => {
             return (
               <div 
                 key={cob.id}
-                className="glass-card rounded-2xl p-4 space-y-3 border-l-4 transition-all"
+                className="glass-card rounded-2xl p-4 space-y-3 border-l-4 transition-all w-full"
                 style={{
                   borderLeftColor: 
                     cob.status === 'pago' ? '#10b981' :
@@ -209,21 +209,21 @@ export const CobrancaList: React.FC<CobrancaListProps> = ({
                 }}
               >
                 {/* Cabeçalho do Card */}
-                <div className="flex items-start justify-between">
-                  <div>
+                <div className="flex items-start justify-between gap-2 w-full">
+                  <div className="min-w-0 flex-1">
                     <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${getBadgeClass(cob.status)}`}>
                       {cob.status}
                     </span>
-                    <h3 className="text-base font-extrabold text-slate-100 mt-1.5">
+                    <h3 className="text-sm sm:text-base font-extrabold text-slate-100 mt-1 truncate">
                       {cob.clienteNome}
                     </h3>
-                    <p className="text-xs text-slate-400 font-medium">
+                    <p className="text-xs text-slate-400 font-medium truncate">
                       {cob.descricao}
                     </p>
                   </div>
 
-                  <div className="text-right">
-                    <p className="text-lg font-extrabold text-slate-100">
+                  <div className="text-right shrink-0">
+                    <p className="text-base sm:text-lg font-extrabold text-slate-100">
                       {formatCurrency(cob.valor)}
                     </p>
                     <div className="flex items-center justify-end gap-1 text-[11px] text-slate-400 mt-0.5">
@@ -234,13 +234,13 @@ export const CobrancaList: React.FC<CobrancaListProps> = ({
                 </div>
 
                 {/* Detalhes Adicionais */}
-                <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-800/80 text-slate-400">
-                  <div className="flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Vencimento: <strong className="text-slate-200">{formatDateBR(cob.dataVencimento)}</strong></span>
+                <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-800/80 text-slate-400 w-full">
+                  <div className="flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                    <span className="text-[11px] truncate">Venc: <strong className="text-slate-200">{formatDateBR(cob.dataVencimento)}</strong></span>
                   </div>
 
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1 shrink-0">
                     {cob.mesReferencia && (
                       <span className="px-2 py-0.5 rounded bg-indigo-500/15 text-[10px] text-indigo-300 font-bold border border-indigo-500/30">
                         Ref: {cob.mesReferencia}
@@ -248,7 +248,7 @@ export const CobrancaList: React.FC<CobrancaListProps> = ({
                     )}
 
                     {cob.categoria && (
-                      <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 font-medium border border-slate-700/50">
+                      <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 font-medium border border-slate-700/50 hidden xs:inline">
                         {cob.categoria}
                       </span>
                     )}
@@ -256,17 +256,17 @@ export const CobrancaList: React.FC<CobrancaListProps> = ({
                 </div>
 
                 {/* Barra de Ações Rápidas do Card */}
-                <div className="flex items-center gap-2 pt-1">
+                <div className="flex items-center gap-1.5 pt-1 w-full">
                   {/* WhatsApp */}
                   <button
                     onClick={() => onOpenWhatsAppModal(cob)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-emerald-600/90 hover:bg-emerald-500 text-white font-bold text-xs transition-all active:scale-95"
+                    className="flex-1 flex items-center justify-center gap-1 py-2 px-2.5 rounded-xl bg-emerald-600/90 hover:bg-emerald-500 text-white font-bold text-xs transition-all active:scale-95"
                   >
-                    <MessageSquare className="w-4 h-4 fill-white/20" />
-                    WhatsApp
+                    <MessageSquare className="w-3.5 h-3.5 fill-white/20 shrink-0" />
+                    <span>WhatsApp</span>
                   </button>
 
-                  {/* Status toggle / Dar Baixa abrindo a telinha de confirmação do Mês de Referência */}
+                  {/* Status toggle / Dar Baixa */}
                   {cob.status !== 'pago' ? (
                     <button
                       onClick={() => {
@@ -276,38 +276,38 @@ export const CobrancaList: React.FC<CobrancaListProps> = ({
                           onMarcarComoPago(cob.id);
                         }
                       }}
-                      className="flex items-center gap-1 py-2 px-3 rounded-xl bg-indigo-600/90 hover:bg-indigo-500 text-white font-bold text-xs transition-all active:scale-95"
+                      className="flex-1 flex items-center justify-center gap-1 py-2 px-2.5 rounded-xl bg-indigo-600/90 hover:bg-indigo-500 text-white font-bold text-xs transition-all active:scale-95 whitespace-nowrap"
                       title="Dar baixa como Pago"
                     >
-                      <CheckCircle className="w-4 h-4" />
-                      Dar Baixa
+                      <CheckCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>Dar Baixa</span>
                     </button>
                   ) : (
                     <button
                       onClick={() => onOpenReciboModal(cob)}
-                      className="flex-1 flex items-center justify-center gap-1 py-2 px-3 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 font-bold text-xs border border-indigo-500/30 transition-all"
+                      className="flex-1 flex items-center justify-center gap-1 py-2 px-2.5 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 font-bold text-xs border border-indigo-500/30 transition-all"
                     >
-                      <FileCheck className="w-4 h-4" />
-                      Recibo
+                      <FileCheck className="w-3.5 h-3.5 shrink-0" />
+                      <span>Recibo</span>
                     </button>
                   )}
 
                   {/* Botão Editar */}
                   <button
                     onClick={() => onOpenEditarModal(cob)}
-                    className="p-2 rounded-xl bg-slate-800/80 hover:bg-indigo-500/20 text-slate-400 hover:text-indigo-300 transition-colors border border-slate-700/40"
+                    className="p-2 rounded-xl bg-slate-800/80 hover:bg-indigo-500/20 text-slate-400 hover:text-indigo-300 transition-colors border border-slate-700/40 shrink-0"
                     title="Editar cobrança"
                   >
-                    <Pencil className="w-4 h-4" />
+                    <Pencil className="w-3.5 h-3.5" />
                   </button>
 
                   {/* Botão Excluir */}
                   <button
                     onClick={() => onDeletarCobranca(cob.id)}
-                    className="p-2 rounded-xl bg-slate-800/80 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-colors border border-slate-700/40"
+                    className="p-2 rounded-xl bg-slate-800/80 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-colors border border-slate-700/40 shrink-0"
                     title="Excluir cobrança"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
