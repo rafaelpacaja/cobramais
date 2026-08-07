@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { X, Printer, FileText, CheckCircle2, AlertTriangle, PieChart } from 'lucide-react';
+import { X, Printer, FileText, CheckCircle2, AlertTriangle, PieChart, Clock, ShieldAlert } from 'lucide-react';
 import { Cobranca, Cliente } from '../types';
 import { formatCurrency, formatDateBR } from '../utils/whatsapp';
 import { formatCNPJ } from '../services/storage';
 
-export type TipoRelatorioPDF = 'quitadas' | 'em_aberto' | 'completo';
+export type TipoRelatorioPDF = 'quitadas' | 'em_aberto' | 'atrasados' | 'completo';
 
 interface RelatorioPDFModalProps {
   isOpen: boolean;
@@ -61,12 +61,19 @@ export function gerarEImprimirRelatorioPDF(
     badgeHeaderBg = '#d1fae5';
     badgeHeaderColor = '#047857';
   } else if (tipo === 'em_aberto') {
-    listaFiltrada = [...atrasados, ...pendentes].sort((a, b) => a.dataVencimento.localeCompare(b.dataVencimento));
-    tituloRelatorio = 'RELATÓRIO DE CONTAS EM ABERTO E VENCIDAS';
-    subTituloRelatorio = 'Demonstrativo Analítico de Títulos Pendentes e Cobranças em Atraso';
-    badgeHeader = '⚠️ CONTAS EM ABERTO';
+    listaFiltrada = pendentes.sort((a, b) => a.dataVencimento.localeCompare(b.dataVencimento));
+    tituloRelatorio = 'RELATÓRIO DE CONTAS A VENCER (PENDENTES)';
+    subTituloRelatorio = 'Demonstrativo Analítico de Títulos Pendentes A Vencer';
+    badgeHeader = '⏳ A VENCER (PENDENTES)';
     badgeHeaderBg = '#fef3c7';
     badgeHeaderColor = '#b45309';
+  } else if (tipo === 'atrasados') {
+    listaFiltrada = atrasados.sort((a, b) => a.dataVencimento.localeCompare(b.dataVencimento));
+    tituloRelatorio = 'RELATÓRIO DE CONTAS VENCIDAS EM ATRASO';
+    subTituloRelatorio = 'Demonstrativo Analítico de Títulos Vencidos e Inadimplentes';
+    badgeHeader = '🚨 VENCIDAS EM ATRASO';
+    badgeHeaderBg = '#fee2e2';
+    badgeHeaderColor = '#b91c1c';
   } else {
     listaFiltrada = cobrancas;
     tituloRelatorio = 'RELATÓRIO CONSOLIDADO GERAL DA CARTEIRA';
@@ -113,7 +120,8 @@ export function gerarEImprimirRelatorioPDF(
 
   const totalFormatadoRodape = 
     tipo === 'quitadas' ? formatCurrency(totalQuitado) :
-    tipo === 'em_aberto' ? formatCurrency(totalEmAberto) : formatCurrency(totalGeralCarteira);
+    tipo === 'em_aberto' ? formatCurrency(totalPendente) :
+    tipo === 'atrasados' ? formatCurrency(totalAtrasado) : formatCurrency(totalGeralCarteira);
 
   printWindow.document.write(`
     <!DOCTYPE html>
@@ -211,7 +219,7 @@ export function gerarEImprimirRelatorioPDF(
         <tfoot>
           <tr style="background: #0f172a; color: #ffffff; font-weight: 900; font-size: 9.5px;">
             <td colspan="7" style="padding: 7px 8px; text-align: right; text-transform: uppercase;">TOTAL DO RELATÓRIO:</td>
-            <td style="padding: 7px 8px; text-align: right; color: #34d399; font-size: 11.5px;">${totalFormatadoRodape}</td>
+            <td style="padding: 7px 8px; text-align: right; color: ${tipo === 'atrasados' ? '#f87171' : '#34d399'}; font-size: 11.5px;">${totalFormatadoRodape}</td>
           </tr>
         </tfoot>
       </table>
@@ -260,7 +268,8 @@ export const RelatorioBaixadasPDFModal: React.FC<RelatorioPDFModalProps> = ({
   const atrasados = cobrancas.filter(c => c.status === 'atrasado');
 
   const totalQuitado = quitadas.reduce((acc, c) => acc + c.valor, 0);
-  const totalEmAberto = [...pendentes, ...atrasados].reduce((acc, c) => acc + c.valor, 0);
+  const totalPendente = pendentes.reduce((acc, c) => acc + c.valor, 0);
+  const totalAtrasado = atrasados.reduce((acc, c) => acc + c.valor, 0);
   const totalGeral = cobrancas.reduce((acc, c) => acc + c.valor, 0);
 
   const handleGerarPDF = () => {
@@ -288,17 +297,17 @@ export const RelatorioBaixadasPDFModal: React.FC<RelatorioPDFModalProps> = ({
           </button>
         </div>
 
-        {/* Seleção do Tipo de Relatório */}
+        {/* Seleção de 4 Tipos de Relatório */}
         <div className="space-y-1.5 text-left">
           <label className="block text-xs font-bold text-slate-300">
             Selecione o Tipo de Relatório:
           </label>
 
-          <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-950 border border-slate-800 rounded-2xl">
+          <div className="grid grid-cols-4 gap-1 p-1 bg-slate-950 border border-slate-800 rounded-2xl">
             <button
               type="button"
               onClick={() => setTipo('quitadas')}
-              className={`py-2 px-2 rounded-xl text-[11px] font-extrabold transition-all flex flex-col items-center justify-center gap-1 ${
+              className={`py-2 px-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold transition-all flex flex-col items-center justify-center gap-1 ${
                 tipo === 'quitadas'
                   ? 'bg-emerald-600 text-white shadow-md shadow-emerald-900/40'
                   : 'text-slate-400 hover:text-slate-200'
@@ -311,20 +320,33 @@ export const RelatorioBaixadasPDFModal: React.FC<RelatorioPDFModalProps> = ({
             <button
               type="button"
               onClick={() => setTipo('em_aberto')}
-              className={`py-2 px-2 rounded-xl text-[11px] font-extrabold transition-all flex flex-col items-center justify-center gap-1 ${
+              className={`py-2 px-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold transition-all flex flex-col items-center justify-center gap-1 ${
                 tipo === 'em_aberto'
                   ? 'bg-amber-600 text-white shadow-md shadow-amber-900/40'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <AlertTriangle className="w-3.5 h-3.5" />
-              <span>Em Aberto</span>
+              <Clock className="w-3.5 h-3.5" />
+              <span>A Vencer</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setTipo('atrasados')}
+              className={`py-2 px-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold transition-all flex flex-col items-center justify-center gap-1 ${
+                tipo === 'atrasados'
+                  ? 'bg-rose-600 text-white shadow-md shadow-rose-900/40'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <ShieldAlert className="w-3.5 h-3.5" />
+              <span>Atrasadas</span>
             </button>
 
             <button
               type="button"
               onClick={() => setTipo('completo')}
-              className={`py-2 px-2 rounded-xl text-[11px] font-extrabold transition-all flex flex-col items-center justify-center gap-1 ${
+              className={`py-2 px-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold transition-all flex flex-col items-center justify-center gap-1 ${
                 tipo === 'completo'
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-900/40'
                   : 'text-slate-400 hover:text-slate-200'
@@ -354,16 +376,25 @@ export const RelatorioBaixadasPDFModal: React.FC<RelatorioPDFModalProps> = ({
           {tipo === 'em_aberto' && (
             <>
               <div className="flex justify-between items-center">
-                <span className="text-slate-400">Total em Aberto:</span>
-                <span className="font-extrabold text-amber-400 text-sm">{formatCurrency(totalEmAberto)}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-400">Títulos Vencidos (Atraso):</span>
-                <span className="font-bold text-rose-400">{atrasados.length} devedores</span>
+                <span className="text-slate-400">Total A Vencer (Pendentes):</span>
+                <span className="font-extrabold text-amber-400 text-sm">{formatCurrency(totalPendente)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-slate-400">Títulos Pendentes:</span>
                 <span className="font-bold text-amber-300">{pendentes.length} cobranças</span>
+              </div>
+            </>
+          )}
+
+          {tipo === 'atrasados' && (
+            <>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400">Total Em Atraso (Vencidos):</span>
+                <span className="font-extrabold text-rose-400 text-sm">{formatCurrency(totalAtrasado)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400">Títulos Inadimplentes:</span>
+                <span className="font-bold text-rose-300">{atrasados.length} devedores</span>
               </div>
             </>
           )}
@@ -396,6 +427,7 @@ export const RelatorioBaixadasPDFModal: React.FC<RelatorioPDFModalProps> = ({
             className={`flex-1 py-3 rounded-xl text-white text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-lg transition-all active:scale-95 ${
               tipo === 'quitadas' ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/40' :
               tipo === 'em_aberto' ? 'bg-amber-600 hover:bg-amber-500 shadow-amber-900/40' :
+              tipo === 'atrasados' ? 'bg-rose-600 hover:bg-rose-500 shadow-rose-900/40' :
               'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-900/40'
             }`}
           >

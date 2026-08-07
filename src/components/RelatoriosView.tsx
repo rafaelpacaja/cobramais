@@ -1,5 +1,5 @@
 import React from 'react';
-import { Download, TrendingUp, PieChart as PieChartIcon, CheckCircle2, Clock, AlertTriangle, Printer } from 'lucide-react';
+import { Download, TrendingUp, PieChart as PieChartIcon, CheckCircle2, Clock, AlertTriangle, Printer, ShieldAlert } from 'lucide-react';
 import { Cobranca, IndicadoresFinanceiros } from '../types';
 import { formatCurrency } from '../utils/whatsapp';
 import { TipoRelatorioPDF } from './RelatorioBaixadasPDFModal';
@@ -63,7 +63,7 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
             Relatórios e Métricas
           </h2>
           <p className="text-xs text-slate-400 truncate">
-            Análise financeira, quitações e contas em aberto
+            Análise financeira, quitações, a vencer e cobranças atrasadas
           </p>
         </div>
 
@@ -71,29 +71,38 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none shrink-0 w-full sm:w-auto">
           <button
             onClick={() => onOpenRelatorioPDF('quitadas')}
-            className="h-9 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-md shadow-emerald-900/30 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap active:scale-95 shrink-0"
-            title="Gerar Relatório PDF de Contas Baixadas/Quitadas"
+            className="h-9 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-md shadow-emerald-900/30 transition-all flex items-center justify-center gap-1 whitespace-nowrap active:scale-95 shrink-0"
+            title="Gerar Relatório PDF de Contas Quitadas"
           >
             <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-            <span>PDF Quitadas</span>
+            <span>Quitadas</span>
           </button>
 
           <button
             onClick={() => onOpenRelatorioPDF('em_aberto')}
-            className="h-9 px-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-extrabold text-xs shadow-md shadow-amber-900/30 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap active:scale-95 shrink-0"
-            title="Gerar Relatório PDF de Contas Em Aberto e Atrasadas"
+            className="h-9 px-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-extrabold text-xs shadow-md shadow-amber-900/30 transition-all flex items-center justify-center gap-1 whitespace-nowrap active:scale-95 shrink-0"
+            title="Gerar Relatório PDF de Contas A Vencer (Pendentes)"
           >
-            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-            <span>PDF Em Aberto</span>
+            <Clock className="w-3.5 h-3.5 shrink-0" />
+            <span>A Vencer</span>
+          </button>
+
+          <button
+            onClick={() => onOpenRelatorioPDF('atrasados')}
+            className="h-9 px-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs shadow-md shadow-rose-900/30 transition-all flex items-center justify-center gap-1 whitespace-nowrap active:scale-95 shrink-0"
+            title="Gerar Relatório PDF de Contas Vencidas em Atraso"
+          >
+            <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
+            <span>Atrasadas</span>
           </button>
 
           <button
             onClick={() => onOpenRelatorioPDF('completo')}
-            className="h-9 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-md shadow-indigo-900/30 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap active:scale-95 shrink-0"
+            className="h-9 px-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-md shadow-indigo-900/30 transition-all flex items-center justify-center gap-1 whitespace-nowrap active:scale-95 shrink-0"
             title="Gerar Relatório Geral Consolidado em PDF"
           >
             <Printer className="w-3.5 h-3.5 shrink-0" />
-            <span>PDF Geral</span>
+            <span>Geral</span>
           </button>
 
           <button
