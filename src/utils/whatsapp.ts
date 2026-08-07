@@ -35,7 +35,8 @@ export function generateWhatsAppMessage(
   cobranca: Cobranca, 
   template: WhatsAppTemplateType,
   nomeEmpresa: string = 'COMPUSERVE LTDA',
-  chavePixPadrao: string = '60.060.102/0001-24'
+  chavePixPadrao: string = '60.060.102/0001-24',
+  cnpjEmpresa: string = '60.060.102/0001-24'
 ): string {
   // Nome completo do cliente para a saudação
   const nomeCliente = cobranca.clienteNome.trim();
@@ -61,12 +62,11 @@ export function generateWhatsAppMessage(
     rawPix = formatCNPJ(rawPix);
   }
   const chavePix = rawPix;
-  const cnpjEmpresaFormat = formatCNPJ('60.060.102/0001-24');
+  const cnpjEmpresaFormat = formatCNPJ(cnpjEmpresa || '60.060.102/0001-24');
 
   const EMOJI_SMILE = '\uD83D\uDE0A'; // 😊
   const EMOJI_BELL = '\uD83D\uDD14';  // 🔔
   const EMOJI_MONEY = '\uD83D\uDCB8'; // 💸
-  const EMOJI_CHECK = '\u2705';       // ✅
 
   switch (template) {
     case 'lembrete_amigavel':

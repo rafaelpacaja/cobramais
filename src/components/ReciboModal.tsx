@@ -189,7 +189,7 @@ export const ReciboModal: React.FC<ReciboModalProps> = ({
 
   const handleShareWhatsApp = () => {
     const cobrancaComDoc = { ...cobranca, clienteDocumento: documentoCliente || undefined, mesReferencia: mesRefFinal };
-    const msg = generateWhatsAppMessage(cobrancaComDoc, 'recibo', nomeEmpresa);
+    const msg = generateWhatsAppMessage(cobrancaComDoc, 'recibo', nomeEmpresa, undefined, cnpjEmpresa);
     openWhatsApp(cobranca.clienteTelefone, msg);
   };
 

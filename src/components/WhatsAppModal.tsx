@@ -15,6 +15,7 @@ interface WhatsAppModalProps {
   clientes?: Cliente[];
   nomeEmpresa: string;
   chavePixPadrao: string;
+  cnpjEmpresa?: string;
 }
 
 export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
@@ -23,7 +24,8 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
   cobranca,
   clientes = [],
   nomeEmpresa,
-  chavePixPadrao
+  chavePixPadrao,
+  cnpjEmpresa
 }) => {
   if (!isOpen || !cobranca) return null;
 
@@ -40,7 +42,7 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
 
   useEffect(() => {
     if (cobranca) {
-      const msg = generateWhatsAppMessage(cobranca, selectedTemplate, nomeEmpresa, chavePixPadrao);
+      const msg = generateWhatsAppMessage(cobranca, selectedTemplate, nomeEmpresa, chavePixPadrao, cnpjEmpresa);
       setCustomMessage(msg);
 
       let rawTel = cobranca.clienteTelefone || '';
@@ -54,7 +56,7 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
       }
       setPhoneInput(rawTel);
     }
-  }, [cobranca, selectedTemplate, nomeEmpresa, chavePixPadrao, clientes]);
+  }, [cobranca, selectedTemplate, nomeEmpresa, chavePixPadrao, cnpjEmpresa, clientes]);
 
   const handleSendWhatsApp = () => {
     openWhatsApp(phoneInput, customMessage);

@@ -541,6 +541,7 @@ export const App: React.FC = () => {
         clientes={clientes}
         nomeEmpresa={config.nomeEmpresa}
         chavePixPadrao={config.chavePixPadrao}
+        cnpjEmpresa={config.cnpjEmpresa}
       />
 
       <ReciboModal
