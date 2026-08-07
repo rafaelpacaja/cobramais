@@ -10,9 +10,12 @@ import {
   updateOverdueStatuses,
   syncWithNeonDatabase,
   pushToNeonDatabase,
+  getUsuarioLogado,
+  saveUsuarioLogado,
+  logoutUsuario,
   AppConfig 
 } from './services/storage';
-import { Cliente, Cobranca, FormaPagamento, TabType } from './types';
+import { Cliente, Cobranca, FormaPagamento, TabType, Usuario } from './types';
 
 // Componentes
 import { Header } from './components/Header';
@@ -22,6 +25,7 @@ import { CobrancaList } from './components/CobrancaList';
 import { ClienteList } from './components/ClienteList';
 import { RelatoriosView } from './components/RelatoriosView';
 import { ConfigView } from './components/ConfigView';
+import { AuthScreen } from './components/AuthScreen';
 
 // Modais
 import { NovaCobrancaModal } from './components/NovaCobrancaModal';
@@ -38,6 +42,9 @@ import { RelatorioBaixadasPDFModal } from './components/RelatorioBaixadasPDFModa
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   
+  // Estado do Usuário Logado
+  const [usuario, setUsuario] = useState<Usuario | null>(getUsuarioLogado());
+
   // Estado dos Dados
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [cobrancas, setCobrancas] = useState<Cobranca[]>([]);
@@ -109,11 +116,39 @@ export const App: React.FC = () => {
         setCobrancas(getCobrancas());
         setConfig(getConfig());
       } else {
-        // Envia estado atual para popular o Neon se estiver vazio
         pushToNeonDatabase();
       }
     });
   }, []);
+
+  const handleLoginSuccess = (userObj: Usuario) => {
+    saveUsuarioLogado(userObj);
+    setUsuario(userObj);
+
+    // Se o usuário tem empresa cadastrada, ajusta o nome da empresa
+    if (userObj.empresa) {
+      const cfg = getConfig();
+      const updatedConfig = {
+        ...cfg,
+        nomeEmpresa: userObj.empresa,
+        cnpjEmpresa: userObj.cnpj || cfg.cnpjEmpresa
+      };
+      setConfig(updatedConfig);
+      saveConfig(updatedConfig);
+    }
+  };
+
+  const handleLogout = () => {
+    if (confirm('Deseja realmente sair da sua conta no CobraMais?')) {
+      logoutUsuario();
+      setUsuario(null);
+    }
+  };
+
+  // Se o usuário NÃO estiver logado, exibe a tela de Autenticação (Login / Cadastro)
+  if (!usuario) {
+    return <AuthScreen onLoginSuccess={handleLoginSuccess} />;
+  }
 
   // Recalcula Indicadores
   const indicadores = calcularIndicadores(cobrancas);
@@ -362,6 +397,8 @@ export const App: React.FC = () => {
       <Header
         nomeEmpresa={config.nomeEmpresa}
         qtdAtrasados={indicadores.qtdAtrasados}
+        usuario={usuario}
+        onLogout={handleLogout}
         onOpenNotifications={() => setActiveTab('cobrancas')}
       />
 

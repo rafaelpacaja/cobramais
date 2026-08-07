@@ -33,6 +33,19 @@ export default async function handler(req: any, res: any) {
 
     // 1. Cria as tabelas se não existirem no Neon
     await sql`
+      CREATE TABLE IF NOT EXISTS usuarios (
+        id TEXT PRIMARY KEY,
+        nome TEXT NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        senha TEXT NOT NULL,
+        empresa TEXT,
+        cnpj TEXT,
+        telefone TEXT,
+        created_at TEXT
+      );
+    `;
+
+    await sql`
       CREATE TABLE IF NOT EXISTS app_config (
         id TEXT PRIMARY KEY DEFAULT 'default',
         nome_empresa TEXT,
@@ -127,9 +140,72 @@ export default async function handler(req: any, res: any) {
       });
     }
 
-    // 3. Trata POST (Salvar / Sincronizar dados para o Neon)
+    // 3. Trata POST (Autenticação, Cadastro e Sincronização)
     if (req.method === 'POST') {
-      const { config, clientes, cobrancas } = req.body || {};
+      const { action, email, senha, nome, empresa, cnpj, telefone, config, clientes, cobrancas } = req.body || {};
+
+      // Ação de Cadastro de Usuário
+      if (action === 'register') {
+        if (!email || !senha || !nome) {
+          return res.status(400).json({ success: false, message: 'Nome, e-mail e senha são obrigatórios.' });
+        }
+
+        const existing = await sql`SELECT id FROM usuarios WHERE LOWER(email) = LOWER(${email.trim()}) LIMIT 1;`;
+        if (existing.length > 0) {
+          return res.status(400).json({ success: false, message: 'Este e-mail já está cadastrado.' });
+        }
+
+        const newId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+        const nowIso = new Date().toISOString();
+
+        await sql`
+          INSERT INTO usuarios (id, nome, email, senha, empresa, cnpj, telefone, created_at)
+          VALUES (${newId}, ${nome.trim()}, ${email.trim().toLowerCase()}, ${senha}, ${empresa || 'COMPUSERVE LTDA'}, ${cnpj || '60.060.102/0001-24'}, ${telefone || ''}, ${nowIso});
+        `;
+
+        const usuario = {
+          id: newId,
+          nome: nome.trim(),
+          email: email.trim().toLowerCase(),
+          empresa: empresa || 'COMPUSERVE LTDA',
+          cnpj: cnpj || '60.060.102/0001-24',
+          telefone: telefone || '',
+          createdAt: nowIso
+        };
+
+        return res.status(200).json({ success: true, usuario });
+      }
+
+      // Ação de Login de Usuário
+      if (action === 'login') {
+        if (!email || !senha) {
+          return res.status(400).json({ success: false, message: 'E-mail e senha são obrigatórios.' });
+        }
+
+        const userRows = await sql`
+          SELECT id, nome, email, empresa, cnpj, telefone, created_at
+          FROM usuarios
+          WHERE LOWER(email) = LOWER(${email.trim()}) AND senha = ${senha}
+          LIMIT 1;
+        `;
+
+        if (userRows.length === 0) {
+          return res.status(401).json({ success: false, message: 'E-mail ou senha incorretos.' });
+        }
+
+        const u = userRows[0];
+        const usuario = {
+          id: u.id,
+          nome: u.nome,
+          email: u.email,
+          empresa: u.empresa || 'COMPUSERVE LTDA',
+          cnpj: u.cnpj || '60.060.102/0001-24',
+          telefone: u.telefone || '',
+          createdAt: u.created_at
+        };
+
+        return res.status(200).json({ success: true, usuario });
+      }
 
       // Salva Config
       if (config) {

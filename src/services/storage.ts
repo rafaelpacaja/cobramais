@@ -1,14 +1,33 @@
-import { Cliente, Cobranca, IndicadoresFinanceiros } from '../types';
+import { Cliente, Cobranca, IndicadoresFinanceiros, Usuario } from '../types';
 
 const CLIENTES_STORAGE_KEY = 'cobranca_app_clientes_v1';
 const COBRANCAS_STORAGE_KEY = 'cobranca_app_cobrancas_v1';
 const CONFIG_STORAGE_KEY = 'cobranca_app_config_v1';
+const USUARIO_STORAGE_KEY = 'cobranca_app_usuario_v1';
 
 export interface AppConfig {
   nomeEmpresa: string;
   cnpjEmpresa: string;
   chavePixPadrao: string;
   diasAvisoVencimento: number;
+}
+
+export function getUsuarioLogado(): Usuario | null {
+  try {
+    const data = localStorage.getItem(USUARIO_STORAGE_KEY);
+    if (!data) return null;
+    return JSON.parse(data);
+  } catch (err) {
+    return null;
+  }
+}
+
+export function saveUsuarioLogado(usuario: Usuario): void {
+  localStorage.setItem(USUARIO_STORAGE_KEY, JSON.stringify(usuario));
+}
+
+export function logoutUsuario(): void {
+  localStorage.removeItem(USUARIO_STORAGE_KEY);
 }
 
 export function formatCNPJ(cnpj: string): string {

@@ -1,13 +1,22 @@
 import React from 'react';
-import { Bell, Wifi, WifiOff } from 'lucide-react';
+import { Bell, Wifi, WifiOff, LogOut, User } from 'lucide-react';
+import { Usuario } from '../types';
 
 interface HeaderProps {
   nomeEmpresa: string;
   qtdAtrasados: number;
+  usuario?: Usuario | null;
+  onLogout?: () => void;
   onOpenNotifications: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ nomeEmpresa, qtdAtrasados, onOpenNotifications }) => {
+export const Header: React.FC<HeaderProps> = ({ 
+  nomeEmpresa, 
+  qtdAtrasados, 
+  usuario,
+  onLogout,
+  onOpenNotifications 
+}) => {
   const [isOnline, setIsOnline] = React.useState(navigator.onLine);
 
   React.useEffect(() => {
@@ -36,7 +45,7 @@ export const Header: React.FC<HeaderProps> = ({ nomeEmpresa, qtdAtrasados, onOpe
               </span>
             </h1>
             <p className="text-xs text-slate-400 font-medium mt-0.5 truncate max-w-[180px]">
-              {nomeEmpresa}
+              {usuario?.empresa || nomeEmpresa}
             </p>
           </div>
         </div>
@@ -44,7 +53,7 @@ export const Header: React.FC<HeaderProps> = ({ nomeEmpresa, qtdAtrasados, onOpe
         <div className="flex items-center space-x-2">
           {/* Badge de status Offline / Online */}
           <div 
-            title={isOnline ? "Modo Online (Sincronizado)" : "Modo Offline (Salvo localmente)"}
+            title={isOnline ? "Modo Online (Sincronizado Neon DB)" : "Modo Offline (Salvo localmente)"}
             className={`flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full border ${
               isOnline 
                 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
@@ -68,6 +77,18 @@ export const Header: React.FC<HeaderProps> = ({ nomeEmpresa, qtdAtrasados, onOpe
               </span>
             )}
           </button>
+
+          {/* Botão de Logout de Usuário */}
+          {usuario && onLogout && (
+            <button
+              onClick={onLogout}
+              className="flex items-center gap-1 py-2 px-2.5 rounded-xl bg-slate-800 hover:bg-rose-500/20 text-slate-300 hover:text-rose-400 border border-slate-700 text-xs font-bold transition-all"
+              title={`Sair da conta de ${usuario.nome}`}
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Sair</span>
+            </button>
+          )}
         </div>
       </div>
     </header>
