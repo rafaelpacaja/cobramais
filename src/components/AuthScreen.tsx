@@ -6,7 +6,6 @@ import {
   EyeOff, 
   LogIn, 
   AlertCircle,
-  Sparkles,
   ShieldCheck
 } from 'lucide-react';
 import { Usuario } from '../types';
@@ -21,25 +20,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-
-  // Login de Demonstração Rápido
-  const handleDemoLogin = () => {
-    setIsLoading(true);
-    setErrorMsg('');
-    setTimeout(() => {
-      const demoUser: Usuario = {
-        id: 'user-demo-compuserve',
-        nome: 'Gestor Compuserve',
-        email: 'admin@compuserve.com.br',
-        empresa: 'COMPUSERVE LTDA',
-        cnpj: '60.060.102/0001-24',
-        telefone: '(11) 98765-4321',
-        createdAt: new Date().toISOString()
-      };
-      setIsLoading(false);
-      onLoginSuccess(demoUser);
-    }, 500);
-  };
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,14 +43,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
       if (res.ok && data.success && data.usuario) {
         onLoginSuccess(data.usuario);
       } else {
-        if (loginEmail === 'admin@compuserve.com.br' || loginEmail.toLowerCase().includes('admin')) {
-          handleDemoLogin();
-        } else {
-          setErrorMsg(data.message || 'E-mail ou senha incorretos. Verifique suas credenciais.');
-        }
+        setErrorMsg(data.message || 'E-mail ou senha incorretos. Verifique suas credenciais.');
       }
     } catch (err) {
       setIsLoading(false);
+      // Fallback em caso de modo offline local
       const localUser: Usuario = {
         id: `user-local-${Date.now()}`,
         nome: loginEmail.split('@')[0] || 'Usuário CobraMais',
@@ -127,14 +104,17 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
               <label className="block text-xs font-bold text-slate-300">
                 E-mail de Acesso
               </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <div className="relative flex items-center">
+                <div className="absolute left-3.5 flex items-center pointer-events-none text-slate-400">
+                  <Mail className="w-4 h-4" />
+                </div>
                 <input
                   type="email"
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
                   placeholder="seu.email@empresa.com.br"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none font-medium"
+                  style={{ paddingLeft: '2.6rem', paddingRight: '1rem' }}
+                  className="w-full bg-slate-950/90 border border-slate-800 rounded-xl py-3 text-xs text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none font-medium transition-all"
                   required
                 />
               </div>
@@ -144,20 +124,23 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
               <label className="block text-xs font-bold text-slate-300">
                 Senha Secreta
               </label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <div className="relative flex items-center">
+                <div className="absolute left-3.5 flex items-center pointer-events-none text-slate-400">
+                  <Lock className="w-4 h-4" />
+                </div>
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={loginSenha}
                   onChange={(e) => setLoginSenha(e.target.value)}
-                  placeholder="Sua senha"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-10 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none font-medium"
+                  placeholder="Sua senha secreta"
+                  style={{ paddingLeft: '2.6rem', paddingRight: '2.6rem' }}
+                  className="w-full bg-slate-950/90 border border-slate-800 rounded-xl py-3 text-xs text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none font-medium transition-all"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1"
+                  className="absolute right-3 text-slate-400 hover:text-white p-1 flex items-center"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -167,7 +150,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50"
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50 mt-2"
             >
               {isLoading ? (
                 <span>Acessando...</span>
@@ -178,18 +161,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
                 </>
               )}
             </button>
-
-            {/* Botão de Acesso Demonstrativo Rápido */}
-            <div className="pt-2 border-t border-slate-800/80">
-              <button
-                type="button"
-                onClick={handleDemoLogin}
-                className="w-full py-2.5 px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-95"
-              >
-                <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>Entrar com Conta Demonstrativa (COMPUSERVE)</span>
-              </button>
-            </div>
           </form>
         </div>
 
