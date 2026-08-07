@@ -187,10 +187,10 @@ export const ReciboModal: React.FC<ReciboModalProps> = ({
     imprimirReciboDocumento(cobranca, documentoCliente, nomeEmpresa, cnpjEmpresa);
   };
 
-  const handleShareWhatsApp = () => {
+  const handleShareWhatsApp = (target: 'seletor' | 'business' | 'normal' = 'seletor') => {
     const cobrancaComDoc = { ...cobranca, clienteDocumento: documentoCliente || undefined, mesReferencia: mesRefFinal };
     const msg = generateWhatsAppMessage(cobrancaComDoc, 'recibo', nomeEmpresa, undefined, cnpjEmpresa);
-    openWhatsApp(cobranca.clienteTelefone, msg);
+    openWhatsApp(cobranca.clienteTelefone, msg, target);
   };
 
   return (
@@ -319,7 +319,7 @@ export const ReciboModal: React.FC<ReciboModalProps> = ({
         {/* Botões de Ação */}
         <div className="flex items-center gap-2">
           <button
-            onClick={handleShareWhatsApp}
+            onClick={() => handleShareWhatsApp('seletor')}
             className="flex-1 py-3 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow-lg shadow-emerald-900/40 flex items-center justify-center gap-1.5 active:scale-95 transition-all"
           >
             <MessageSquare className="w-4 h-4" />

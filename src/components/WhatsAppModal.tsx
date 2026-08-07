@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { X, MessageSquare, Send, Copy, Check, Sparkles, Phone, Users } from 'lucide-react';
+import { X, MessageSquare, Send, Copy, Check, Sparkles, Phone, Users, Briefcase, Smartphone } from 'lucide-react';
 import { Cobranca, Cliente, WhatsAppTemplateType } from '../types';
 import { 
   generateWhatsAppMessage, 
   openWhatsApp, 
   formatCurrency, 
-  formatDateBR 
+  TipoWhatsAppTarget 
 } from '../utils/whatsapp';
 
 interface WhatsAppModalProps {
@@ -36,6 +36,7 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
     cobranca.dataVencimento === new Date().toISOString().split('T')[0] ? 'dia_vencimento' : 'lembrete_amigavel';
 
   const [selectedTemplate, setSelectedTemplate] = useState<WhatsAppTemplateType>(defaultTemplate);
+  const [targetApp, setTargetApp] = useState<TipoWhatsAppTarget>('business');
   const [customMessage, setCustomMessage] = useState<string>('');
   const [phoneInput, setPhoneInput] = useState<string>('');
   const [copied, setCopied] = useState<boolean>(false);
@@ -58,8 +59,8 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
     }
   }, [cobranca, selectedTemplate, nomeEmpresa, chavePixPadrao, cnpjEmpresa, clientes]);
 
-  const handleSendWhatsApp = () => {
-    openWhatsApp(phoneInput, customMessage);
+  const handleSendWhatsApp = (app: TipoWhatsAppTarget = targetApp) => {
+    openWhatsApp(phoneInput, customMessage, app);
     onClose();
   };
 
@@ -101,6 +102,53 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
           >
             <X className="w-5 h-5" />
           </button>
+        </div>
+
+        {/* Escolha do Aplicativo WhatsApp (Business, Normal ou Seletor) */}
+        <div className="space-y-1.5">
+          <label className="block text-xs font-bold text-slate-300">
+            Enviar pelo Aplicativo:
+          </label>
+          <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-950 border border-slate-800 rounded-2xl">
+            <button
+              type="button"
+              onClick={() => setTargetApp('business')}
+              className={`py-2 px-2 rounded-xl text-[11px] font-extrabold transition-all flex flex-col items-center justify-center gap-1 ${
+                targetApp === 'business'
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-900/40'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Briefcase className="w-3.5 h-3.5" />
+              <span>Whats Business</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setTargetApp('seletor')}
+              className={`py-2 px-2 rounded-xl text-[11px] font-extrabold transition-all flex flex-col items-center justify-center gap-1 ${
+                targetApp === 'seletor'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-900/40'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Smartphone className="w-3.5 h-3.5" />
+              <span>Perguntar Celular</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setTargetApp('normal')}
+              className={`py-2 px-2 rounded-xl text-[11px] font-extrabold transition-all flex flex-col items-center justify-center gap-1 ${
+                targetApp === 'normal'
+                  ? 'bg-teal-600 text-white shadow-md shadow-teal-900/40'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>Whats Normal</span>
+            </button>
+          </div>
         </div>
 
         {/* Telefone do Cliente & Aviso */}
@@ -194,11 +242,13 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
 
           <button
             type="button"
-            onClick={handleSendWhatsApp}
+            onClick={() => handleSendWhatsApp(targetApp)}
             className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-extrabold shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 active:scale-95 transition-all"
           >
             <Send className="w-4 h-4 fill-white/20" />
-            {phoneInput.trim() ? `Abrir Conversa com ${cobranca.clienteNome}` : 'Escolher Contato no WhatsApp'}
+            <span>
+              {targetApp === 'business' ? 'Abrir no Whats Business' : targetApp === 'normal' ? 'Abrir no Whats Normal' : 'Abrir Seletor do Celular'}
+            </span>
           </button>
         </div>
       </div>

@@ -1,6 +1,8 @@
 import { Cobranca, WhatsAppTemplateType } from '../types';
 import { getTodayString, parseDateToISO, formatCNPJ } from '../services/storage';
 
+export type TipoWhatsAppTarget = 'seletor' | 'business' | 'normal';
+
 export function formatPhoneForWhatsApp(phone: string): string {
   if (!phone) return '';
   const cleanNumber = phone.replace(/\D/g, '');
@@ -91,15 +93,43 @@ export function generateWhatsAppMessage(
   }
 }
 
-export function openWhatsApp(phone: string, message: string): void {
+export function openWhatsApp(phone: string, message: string, target: TipoWhatsAppTarget = 'seletor'): void {
   const formattedPhone = formatPhoneForWhatsApp(phone);
   const encodedMessage = encodeURIComponent(message);
   
+  const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
+
   let url = '';
-  if (formattedPhone && formattedPhone.length >= 10) {
-    url = `https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodedMessage}`;
+
+  if (target === 'business' && isAndroid) {
+    // Intent direto para WhatsApp Business (com.whatsapp.w4b)
+    if (formattedPhone && formattedPhone.length >= 10) {
+      url = `intent://send?phone=${formattedPhone}&text=${encodedMessage}#Intent;scheme=whatsapp;package=com.whatsapp.w4b;end`;
+    } else {
+      url = `intent://send?text=${encodedMessage}#Intent;scheme=whatsapp;package=com.whatsapp.w4b;end`;
+    }
+  } else if (target === 'normal' && isAndroid) {
+    // Intent direto para WhatsApp Normal (com.whatsapp)
+    if (formattedPhone && formattedPhone.length >= 10) {
+      url = `intent://send?phone=${formattedPhone}&text=${encodedMessage}#Intent;scheme=whatsapp;package=com.whatsapp;end`;
+    } else {
+      url = `intent://send?text=${encodedMessage}#Intent;scheme=whatsapp;package=com.whatsapp;end`;
+    }
+  } else if (isMobile) {
+    // Scheme universal que abre o seletor nativo do sistema Android/iOS ("Abrir com WhatsApp ou WhatsApp Business?")
+    if (formattedPhone && formattedPhone.length >= 10) {
+      url = `whatsapp://send?phone=${formattedPhone}&text=${encodedMessage}`;
+    } else {
+      url = `whatsapp://send?text=${encodedMessage}`;
+    }
   } else {
-    url = `https://api.whatsapp.com/send?text=${encodedMessage}`;
+    // No PC (Web Browser Desktop)
+    if (formattedPhone && formattedPhone.length >= 10) {
+      url = `https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodedMessage}`;
+    } else {
+      url = `https://api.whatsapp.com/send?text=${encodedMessage}`;
+    }
   }
 
   window.open(url, '_blank');
