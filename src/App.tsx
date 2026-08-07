@@ -37,7 +37,7 @@ import { GerarMensalidadesRecorrentesModal } from './components/GerarMensalidade
 import { WhatsAppModal } from './components/WhatsAppModal';
 import { ReciboModal } from './components/ReciboModal';
 import { ImportarClientesModal } from './components/ImportarClientesModal';
-import { RelatorioBaixadasPDFModal } from './components/RelatorioBaixadasPDFModal';
+import { RelatorioBaixadasPDFModal, TipoRelatorioPDF } from './components/RelatorioBaixadasPDFModal';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
@@ -63,6 +63,7 @@ export const App: React.FC = () => {
   const [clientePreSelecionado, setClientePreSelecionado] = useState<Cliente | null>(null);
   const [reciboConfetti, setReciboConfetti] = useState(false);
   const [isRelatorioPDFOpen, setIsRelatorioPDFOpen] = useState(false);
+  const [tipoRelatorioPDF, setTipoRelatorioPDF] = useState<TipoRelatorioPDF>('quitadas');
 
   // Carrega dados iniciais do LocalStorage e sincroniza com o Neon Database
   useEffect(() => {
@@ -125,7 +126,6 @@ export const App: React.FC = () => {
     saveUsuarioLogado(userObj);
     setUsuario(userObj);
 
-    // Se o usuário tem empresa cadastrada, ajusta o nome da empresa
     if (userObj.empresa) {
       const cfg = getConfig();
       const updatedConfig = {
@@ -145,15 +145,12 @@ export const App: React.FC = () => {
     }
   };
 
-  // Se o usuário NÃO estiver logado, exibe a tela de Autenticação (Login / Cadastro)
   if (!usuario) {
     return <AuthScreen onLoginSuccess={handleLoginSuccess} />;
   }
 
-  // Recalcula Indicadores
   const indicadores = calcularIndicadores(cobrancas);
 
-  // Ações de Salvar, Editar e Atualizar
   const handleSalvarCobranca = (novas: Omit<Cobranca, 'id' | 'createdAt'>[]) => {
     const listToSave: Cobranca[] = [...cobrancas];
     novas.forEach((item, index) => {
@@ -402,7 +399,7 @@ export const App: React.FC = () => {
         onOpenNotifications={() => setActiveTab('cobrancas')}
       />
 
-      {/* Conteúdo Principal com Base na Tab Ativa */}
+      {/* Conteúdo Principal */}
       <main className="flex-1">
         {activeTab === 'dashboard' && (
           <Dashboard
@@ -453,7 +450,10 @@ export const App: React.FC = () => {
           <RelatoriosView
             cobrancas={cobrancas}
             indicadores={indicadores}
-            onOpenRelatorioPDF={() => setIsRelatorioPDFOpen(true)}
+            onOpenRelatorioPDF={(tipo = 'quitadas') => {
+              setTipoRelatorioPDF(tipo);
+              setIsRelatorioPDFOpen(true);
+            }}
           />
         )}
 
@@ -469,7 +469,7 @@ export const App: React.FC = () => {
         )}
       </main>
 
-      {/* Bottom Navigation Bar estilo Android */}
+      {/* Bottom Navigation Bar */}
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -563,6 +563,7 @@ export const App: React.FC = () => {
         clientes={clientes}
         nomeEmpresa={config.nomeEmpresa}
         cnpjEmpresa={config.cnpjEmpresa}
+        tipoInicial={tipoRelatorioPDF}
       />
     </div>
   );
