@@ -16,10 +16,12 @@ import {
   Mail, 
   User, 
   Building2, 
-  Phone 
+  Phone,
+  KeyRound
 } from 'lucide-react';
-import { Cliente, Cobranca, Usuario } from '../types';
-import { AppConfig } from '../services/storage';
+import { Cliente, Cobranca } from '../types';
+import { AppConfig, getUsuarioLogado } from '../services/storage';
+import { AlterarSenhaModal } from './AlterarSenhaModal';
 
 interface ConfigViewProps {
   config: AppConfig;
@@ -38,12 +40,17 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
   onRestaurarDados,
   onResetSeedData
 }) => {
+  const usuarioLogado = getUsuarioLogado();
+
   const [nomeEmpresa, setNomeEmpresa] = useState(config.nomeEmpresa || 'COMPUSERVE LTDA');
   const [cnpjEmpresa, setCnpjEmpresa] = useState(config.cnpjEmpresa || '60.060.102/0001-24');
   const [chavePixPadrao, setChavePixPadrao] = useState(config.chavePixPadrao || '60.060.102/0001-24');
   const [mensagemSalvo, setMensagemSalvo] = useState(false);
 
-  // Estado do Modal de Cadastro de Novo Usuário da Equipe
+  // Modal Alterar Senha
+  const [isAlterarSenhaModalOpen, setIsAlterarSenhaModalOpen] = useState(false);
+
+  // Modal Cadastro de Novo Usuário da Equipe
   const [isNovoUsuarioModalOpen, setIsNovoUsuarioModalOpen] = useState(false);
   const [newNome, setNewNome] = useState('');
   const [newEmail, setNewEmail] = useState('');
@@ -77,8 +84,8 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
     setUserErrorMsg('');
     setUserSuccessMsg('');
 
-    if (newSenha.length < 6) {
-      setUserErrorMsg('A senha deve ter no mínimo 6 caracteres.');
+    if (newSenha.length < 4) {
+      setUserErrorMsg('A senha deve ter no mínimo 4 caracteres.');
       return;
     }
 
@@ -138,7 +145,9 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
     const link = document.createElement('a');
     link.href = dataStr;
     link.download = `backup_cobramais_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
     link.click();
+    document.body.removeChild(link);
   };
 
   const handleImportBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -146,16 +155,21 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = (event) => {
       try {
-        const json = JSON.parse(evt.target?.result as string);
-        if (json.clientes && json.cobrancas) {
-          onRestaurarDados(json.clientes, json.cobrancas);
-          if (json.config) {
-            onSalvarConfig(json.config);
-            setNomeEmpresa(json.config.nomeEmpresa);
-            setCnpjEmpresa(json.config.cnpjEmpresa || '');
-            setChavePixPadrao(json.config.chavePixPadrao);
+        const data = JSON.parse(event.target?.result as string);
+        if (data.clientes && data.cobrancas) {
+          onRestaurarDados(data.clientes, data.cobrancas);
+          if (data.config) {
+            onSalvarConfig({
+              ...config,
+              nomeEmpresa: data.config.nomeEmpresa || config.nomeEmpresa,
+              cnpjEmpresa: data.config.cnpjEmpresa || config.cnpjEmpresa,
+              chavePixPadrao: data.config.chavePixPadrao || config.chavePixPadrao
+            });
+            setNomeEmpresa(data.config.nomeEmpresa || nomeEmpresa);
+            setCnpjEmpresa(data.config.cnpjEmpresa || cnpjEmpresa);
+            setChavePixPadrao(data.config.chavePixPadrao || chavePixPadrao);
           }
           alert('Backup restaurado com sucesso!');
         } else {
@@ -166,39 +180,68 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
       }
     };
     reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  const handleAbrirModalReset = () => {
+    setSenhaInput('');
+    setErroSenha('');
+    setIsResetModalOpen(true);
   };
 
   const handleConfirmarResetComSenha = (e: React.FormEvent) => {
     e.preventDefault();
-    setErroSenha('');
-
-    if (senhaInput.trim() === '061881') {
-      onResetSeedData();
+    if (senhaInput === '061881') {
       setIsResetModalOpen(false);
-      setSenhaInput('');
-      alert('Dados resetados com sucesso para a versão inicial!');
+      onResetSeedData();
+      alert('Dados restaurados para a versão de demonstração original!');
     } else {
-      setErroSenha('Senha incorreta! Digite a senha válida para autorizar o reset.');
+      setErroSenha('Senha incorreta! Digite a senha de segurança de 6 dígitos.');
     }
   };
 
   return (
-    <div className="w-full min-h-[101vh] space-y-4 px-4 pt-3 pb-24 animate-fade-in max-w-full overflow-x-hidden">
-      <div>
-        <h2 className="text-xl font-extrabold text-slate-100">
+    <div className="w-full min-h-[101vh] space-y-4 px-4 pt-3 pb-24 animate-fade-in">
+      {/* Top Header Padronizado */}
+      <div className="min-w-0 flex-1">
+        <h2 className="text-xl font-extrabold text-slate-100 truncate">
           Ajustes e Configurações
         </h2>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-400 truncate">
           Personalize dados da sua empresa, equipe e backups
         </p>
       </div>
 
       {mensagemSalvo && (
-        <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4" />
-          Configurações salvas com sucesso!
+        <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-emerald-400 text-xs flex items-center gap-2 animate-fade-in">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          <span>Configurações salvas com sucesso!</span>
         </div>
       )}
+
+      {/* Card de Segurança & Alteração de Senha */}
+      <div className="glass-card rounded-2xl p-4 space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
+              <KeyRound className="w-4 h-4 text-indigo-400" />
+              Segurança & Alterar Senha
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Conta logada: <strong className="text-indigo-300 font-bold">{usuarioLogado?.email || 'admin@compuserve.com'}</strong>
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsAlterarSenhaModalOpen(true)}
+            className="h-10 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md shadow-indigo-900/30 active:scale-95 transition-all shrink-0 cursor-pointer"
+          >
+            <Lock className="w-3.5 h-3.5" />
+            <span>Alterar Minha Senha</span>
+          </button>
+        </div>
+      </div>
 
       {/* Formulário de Configurações da Empresa */}
       <div className="glass-card rounded-2xl p-4 space-y-3">
@@ -292,6 +335,7 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
           <Database className="w-4 h-4 text-indigo-400" />
           Cópia de Segurança (Backup)
         </h3>
+
         <p className="text-xs text-slate-400 leading-relaxed">
           Exporte seus clientes e cobranças para salvar uma cópia segura em seu computador ou celular.
         </p>
@@ -299,15 +343,15 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
           <button
             onClick={handleExportBackup}
-            className="py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+            className="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition-all"
           >
             <Download className="w-4 h-4 text-indigo-400" />
             Exportar JSON
           </button>
 
-          <label className="py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer">
+          <label className="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer active:scale-95 transition-all">
             <Upload className="w-4 h-4 text-emerald-400" />
-            Restaurar
+            <span>Restaurar</span>
             <input
               type="file"
               accept=".json"
@@ -318,37 +362,45 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
         </div>
       </div>
 
-      {/* Zona de Perigo / Reset */}
-      <div className="glass-card rounded-2xl p-4 space-y-2 border-rose-500/20">
-        <h3 className="text-xs font-bold text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
+      {/* Seção Perigosa (Reset de Dados com Modal de Senha) */}
+      <div className="glass-card border-rose-500/20 rounded-2xl p-4 space-y-3">
+        <h3 className="text-sm font-bold text-rose-400 flex items-center gap-2">
           <Trash2 className="w-4 h-4" />
-          Restaurar Dados Demonstrativos
+          RESTAURAR DADOS DEMONSTRATIVOS
         </h3>
-        <p className="text-[11px] text-slate-400">
+
+        <p className="text-xs text-slate-400 leading-relaxed">
           Reinicia os dados do aplicativo para a versão original de testes.
         </p>
+
         <button
-          onClick={() => {
-            setSenhaInput('');
-            setErroSenha('');
-            setIsResetModalOpen(true);
-          }}
-          className="w-full py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-bold border border-rose-500/30 transition-all active:scale-95"
+          onClick={handleAbrirModalReset}
+          className="w-full py-2.5 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs font-extrabold flex items-center justify-center gap-2 active:scale-95 transition-all"
         >
-          Resetar Dados Demonstrativos
+          <ShieldAlert className="w-4 h-4 text-rose-400" />
+          Restaurar Dados Iniciais
         </button>
       </div>
 
-      {/* Modal de Cadastro de Novo Usuário da Equipe */}
+      {/* Modal Alterar Senha */}
+      <AlterarSenhaModal
+        isOpen={isAlterarSenhaModalOpen}
+        onClose={() => setIsAlterarSenhaModalOpen(false)}
+        emailUsuario={usuarioLogado?.email || 'admin@compuserve.com'}
+      />
+
+      {/* Modal Cadastro de Novo Usuário */}
       {isNovoUsuarioModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl p-5 space-y-4 shadow-2xl animate-slide-up max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-5 space-y-4 shadow-2xl animate-slide-up">
+            
+            {/* Header Modal */}
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center space-x-2 text-emerald-400">
                 <UserPlus className="w-5 h-5" />
-                <h3 className="text-base font-extrabold text-slate-100">
-                  Cadastrar Novo Usuário da Equipe
-                </h3>
+                <h2 className="text-base font-extrabold text-slate-100">
+                  Cadastrar Usuário da Equipe
+                </h2>
               </div>
               <button
                 onClick={() => setIsNovoUsuarioModalOpen(false)}
@@ -359,96 +411,127 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
             </div>
 
             {userErrorMsg && (
-              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-bold">
-                {userErrorMsg}
+              <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-400 text-xs flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 shrink-0" />
+                <span>{userErrorMsg}</span>
               </div>
             )}
 
             {userSuccessMsg && (
-              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-bold">
-                {userSuccessMsg}
+              <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-emerald-400 text-xs flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>{userSuccessMsg}</span>
               </div>
             )}
 
-            <form onSubmit={handleCadastrarNovoUsuarioSubmit} className="space-y-3 text-left">
+            <form onSubmit={handleCadastrarNovoUsuarioSubmit} className="space-y-3 text-xs">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Nome Completo
+                <label className="block text-slate-300 font-bold mb-1">
+                  Nome Completo:
                 </label>
-                <input
-                  type="text"
-                  value={newNome}
-                  onChange={(e) => setNewNome(e.target.value)}
-                  placeholder="Ex: Carlos Eduardo Silva"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-bold focus:border-emerald-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  E-mail de Acesso
-                </label>
-                <input
-                  type="email"
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                  placeholder="usuario@suaempresa.com.br"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-bold focus:border-emerald-500"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Empresa / Organização
-                  </label>
+                <div className="relative flex items-center">
+                  <div className="w-9 h-9 rounded-l-xl bg-slate-950 border border-r-0 border-slate-800 flex items-center justify-center text-slate-400 shrink-0">
+                    <User className="w-4 h-4" />
+                  </div>
                   <input
                     type="text"
-                    value={newEmpresa}
-                    onChange={(e) => setNewEmpresa(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-bold focus:border-emerald-500"
+                    value={newNome}
+                    onChange={(e) => setNewNome(e.target.value)}
+                    placeholder="Ex: João Souza"
+                    required
+                    className="w-full bg-slate-950 border border-slate-800 rounded-r-xl px-3 py-2 text-slate-100 font-bold focus:border-emerald-500"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-bold mb-1">
+                  E-mail de Acesso (Login):
+                </label>
+                <div className="relative flex items-center">
+                  <div className="w-9 h-9 rounded-l-xl bg-slate-950 border border-r-0 border-slate-800 flex items-center justify-center text-slate-400 shrink-0">
+                    <Mail className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="email"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder="joao@compuserve.com"
+                    required
+                    className="w-full bg-slate-950 border border-slate-800 rounded-r-xl px-3 py-2 text-slate-100 font-bold focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    CNPJ / CPF
+                  <label className="block text-slate-300 font-bold mb-1">
+                    Empresa:
+                  </label>
+                  <div className="relative flex items-center">
+                    <div className="w-8 h-9 rounded-l-xl bg-slate-950 border border-r-0 border-slate-800 flex items-center justify-center text-slate-400 shrink-0">
+                      <Building2 className="w-3.5 h-3.5" />
+                    </div>
+                    <input
+                      type="text"
+                      value={newEmpresa}
+                      onChange={(e) => setNewEmpresa(e.target.value)}
+                      required
+                      className="w-full bg-slate-950 border border-slate-800 rounded-r-xl px-2.5 py-2 text-slate-100 font-bold focus:border-emerald-500 text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-bold mb-1">
+                    CNPJ:
                   </label>
                   <input
                     type="text"
                     value={newCnpj}
                     onChange={(e) => setNewCnpj(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-bold focus:border-emerald-500"
+                    required
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-slate-100 font-bold focus:border-emerald-500 text-xs"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Telefone / WhatsApp
+                  <label className="block text-slate-300 font-bold mb-1">
+                    Telefone (Whats):
                   </label>
-                  <input
-                    type="text"
-                    value={newTelefone}
-                    onChange={(e) => setNewTelefone(e.target.value)}
-                    placeholder="(00) 00000-0000"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-bold focus:border-emerald-500"
-                  />
+                  <div className="relative flex items-center">
+                    <div className="w-8 h-9 rounded-l-xl bg-slate-950 border border-r-0 border-slate-800 flex items-center justify-center text-slate-400 shrink-0">
+                      <Phone className="w-3.5 h-3.5" />
+                    </div>
+                    <input
+                      type="text"
+                      value={newTelefone}
+                      onChange={(e) => setNewTelefone(e.target.value)}
+                      placeholder="(00) 00000-0000"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-r-xl px-2.5 py-2 text-slate-100 font-bold focus:border-emerald-500 text-xs"
+                    />
+                  </div>
                 </div>
+
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Senha Secreta
+                  <label className="block text-slate-300 font-bold mb-1">
+                    Senha de Acesso:
                   </label>
-                  <input
-                    type="password"
-                    value={newSenha}
-                    onChange={(e) => setNewSenha(e.target.value)}
-                    placeholder="Mínimo 6 caracteres"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-bold focus:border-emerald-500"
-                    required
-                  />
+                  <div className="relative flex items-center">
+                    <div className="w-8 h-9 rounded-l-xl bg-slate-950 border border-r-0 border-slate-800 flex items-center justify-center text-slate-400 shrink-0">
+                      <Lock className="w-3.5 h-3.5" />
+                    </div>
+                    <input
+                      type="password"
+                      value={newSenha}
+                      onChange={(e) => setNewSenha(e.target.value)}
+                      placeholder="Mín. 4 digitos"
+                      required
+                      className="w-full bg-slate-950 border border-slate-800 rounded-r-xl px-2.5 py-2 text-slate-100 font-bold focus:border-emerald-500 text-xs"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -460,12 +543,13 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
                 >
                   Cancelar
                 </button>
+
                 <button
                   type="submit"
                   disabled={userLoading}
-                  className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow-lg shadow-emerald-900/30 active:scale-95 transition-all"
+                  className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow-md shadow-emerald-900/30 flex items-center justify-center gap-1"
                 >
-                  {userLoading ? 'Cadastrando...' : 'Cadastrar Usuário'}
+                  {userLoading ? 'Cadastrando...' : 'Salvar Usuário'}
                 </button>
               </div>
             </form>
@@ -473,17 +557,17 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
         </div>
       )}
 
-      {/* Modal de Confirmação com Senha de Segurança */}
+      {/* Modal de Confirmação com Senha de Segurança para Reset */}
       {isResetModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-sm bg-slate-900 border border-rose-500/30 rounded-3xl p-5 space-y-4 shadow-2xl animate-slide-up max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-3xl p-5 space-y-4 shadow-2xl animate-slide-up">
             
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center space-x-2 text-rose-400">
                 <ShieldAlert className="w-5 h-5" />
-                <h3 className="text-base font-extrabold text-slate-100">
-                  Confirmar Reset de Dados
-                </h3>
+                <h2 className="text-base font-extrabold text-slate-100">
+                  Senha de Segurança
+                </h2>
               </div>
               <button
                 onClick={() => setIsResetModalOpen(false)}
@@ -493,9 +577,10 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
               </button>
             </div>
 
-            <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-xs text-rose-300 space-y-1">
-              <p className="font-bold flex items-center gap-1 text-rose-400">
-                ⚠️ AVISO IMPORTANTE!
+            <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-2xl space-y-1">
+              <p className="text-xs font-extrabold text-rose-400 flex items-center gap-1.5">
+                <ShieldAlert className="w-4 h-4" />
+                Atenção: Ação Irreversível!
               </p>
               <p className="text-[11px] text-slate-300">
                 Esta ação apagará todas as cobranças e clientes atuais e restaurará o banco de dados inicial.

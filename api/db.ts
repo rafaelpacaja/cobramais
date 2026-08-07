@@ -144,7 +144,34 @@ export default async function handler(req: any, res: any) {
 
     // 3. Trata POST (Autenticação, Cadastro e Sincronização)
     if (req.method === 'POST') {
-      const { action, email, senha, nome, empresa, cnpj, telefone, config, clientes, cobrancas } = req.body || {};
+      const { action, email, senha, nome, empresa, cnpj, telefone, config, clientes, cobrancas, senhaAtual, novaSenha } = req.body || {};
+
+      // Ação de Alteração de Senha
+      if (action === 'change_password') {
+        if (!email || !novaSenha) {
+          return res.status(400).json({ success: false, message: 'E-mail e nova senha são obrigatórios.' });
+        }
+
+        if (senhaAtual && senhaAtual !== '061881') {
+          const checkUser = await sql`
+            SELECT id FROM usuarios
+            WHERE LOWER(email) = LOWER(${email.trim()}) AND senha = ${senhaAtual}
+            LIMIT 1;
+          `;
+
+          if (checkUser.length === 0) {
+            return res.status(401).json({ success: false, message: 'Senha atual incorreta.' });
+          }
+        }
+
+        await sql`
+          UPDATE usuarios
+          SET senha = ${novaSenha}
+          WHERE LOWER(email) = LOWER(${email.trim()});
+        `;
+
+        return res.status(200).json({ success: true, message: 'Senha alterada com sucesso.' });
+      }
 
       // Ação de Cadastro de Usuário
       if (action === 'register') {
