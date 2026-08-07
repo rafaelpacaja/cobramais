@@ -66,7 +66,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
       <div className="absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-emerald-600/20 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="w-full max-w-sm space-y-5 z-10 animate-fade-in">
+      <div className="w-full max-w-sm space-y-5 z-10 animate-fade-in mx-auto">
         {/* Cabeçalho da Marca */}
         <div className="text-center space-y-2">
           <div className="inline-flex items-center justify-center gap-2.5 px-4 py-2 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 shadow-xl">
@@ -152,7 +152,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50 mt-2 cursor-pointer"
+              style={{ minHeight: '48px', height: '48px' }}
+              className="w-full h-12 min-h-12 px-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50 mt-2 cursor-pointer"
             >
               {isLoading ? (
                 <span>Acessando...</span>
