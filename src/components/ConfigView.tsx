@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Settings, Save, Database, Trash2, Download, Upload, CheckCircle2, ShieldAlert, Lock, X } from 'lucide-react';
-import { AppConfig, Cliente, Cobranca } from '../types';
+import { Cliente, Cobranca } from '../types';
+import { AppConfig } from '../services/storage';
 
 interface ConfigViewProps {
   config: AppConfig;
