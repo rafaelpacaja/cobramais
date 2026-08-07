@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Printer, FileText, CheckCircle2, AlertTriangle, PieChart, Clock, ShieldAlert } from 'lucide-react';
+import { X, Printer, FileText, CheckCircle2, PieChart, Clock, ShieldAlert } from 'lucide-react';
 import { Cobranca, Cliente } from '../types';
 import { formatCurrency, formatDateBR } from '../utils/whatsapp';
 import { formatCNPJ } from '../services/storage';
@@ -53,6 +53,9 @@ export function gerarEImprimirRelatorioPDF(
   const totalEmAberto = totalPendente + totalAtrasado;
   const totalGeralCarteira = totalQuitado + totalEmAberto;
 
+  // Define se exibe a coluna de Forma de Pagamento (somente em contas que envolvem liquidação ou geral)
+  const exibirForma = tipo === 'quitadas' || tipo === 'completo';
+
   if (tipo === 'quitadas') {
     listaFiltrada = quitadas;
     tituloRelatorio = 'RELATÓRIO FINANCEIRO DE CONTAS QUITADAS';
@@ -83,8 +86,11 @@ export function gerarEImprimirRelatorioPDF(
     badgeHeaderColor = '#4338ca';
   }
 
+  const colsCount = exibirForma ? 8 : 7;
+  const footerColspan = exibirForma ? 7 : 6;
+
   const rowsHtml = listaFiltrada.length === 0 
-    ? `<tr><td colspan="8" style="padding: 15px; text-align: center; color: #64748b;">Nenhuma cobrança encontrada para este tipo de relatório.</td></tr>`
+    ? `<tr><td colspan="${colsCount}" style="padding: 15px; text-align: center; color: #64748b;">Nenhuma cobrança encontrada para este tipo de relatório.</td></tr>`
     : listaFiltrada.map((item, idx) => {
         const cli = clientes.find(c => c.id === item.clienteId || c.nome === item.clienteNome);
         const doc = item.clienteDocumento || cli?.documento || '-';
@@ -112,7 +118,7 @@ export function gerarEImprimirRelatorioPDF(
             <td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: center; font-weight: 800; color: #4338ca; font-size: 10px;">${mesRefFinal}</td>
             <td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: center; color: #475569; font-weight: 600;">${formatDateBR(item.dataVencimento)}</td>
             <td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: center;">${statusBadgeHtml}</td>
-            <td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: center; text-transform: uppercase; font-weight: bold; font-size: 9px; color: #334155;">${item.formaPagamento}</td>
+            ${exibirForma ? `<td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: center; text-transform: uppercase; font-weight: bold; font-size: 9px; color: #334155;">${item.formaPagamento}</td>` : ''}
             <td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: right; font-weight: 800; color: ${item.status === 'atrasado' ? '#b91c1c' : item.status === 'pago' ? '#047857' : '#0f172a'};">${formatCurrency(item.valor)}</td>
           </tr>
         `;
@@ -215,7 +221,7 @@ export function gerarEImprimirRelatorioPDF(
             <th style="text-align: center;">MÊS REF.</th>
             <th style="text-align: center;">VENCIMENTO</th>
             <th style="text-align: center;">STATUS</th>
-            <th style="text-align: center;">FORMA</th>
+            ${exibirForma ? `<th style="text-align: center;">FORMA</th>` : ''}
             <th style="text-align: right;">VALOR DA COBRANÇA</th>
           </tr>
         </thead>
@@ -224,7 +230,7 @@ export function gerarEImprimirRelatorioPDF(
         </tbody>
         <tfoot>
           <tr style="background: #0f172a; color: #ffffff; font-weight: 900; font-size: 9.5px;">
-            <td colspan="7" style="padding: 7px 8px; text-align: right; text-transform: uppercase;">TOTAL DO RELATÓRIO:</td>
+            <td colspan="${footerColspan}" style="padding: 7px 8px; text-align: right; text-transform: uppercase;">TOTAL DO RELATÓRIO:</td>
             <td style="padding: 7px 8px; text-align: right; color: ${tipo === 'atrasados' ? '#f87171' : '#34d399'}; font-size: 11.5px;">${totalFormatadoRodape}</td>
           </tr>
         </tfoot>
