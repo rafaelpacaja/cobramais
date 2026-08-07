@@ -80,7 +80,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
         </div>
 
         {/* Card Principal de Login */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-2xl backdrop-blur-xl space-y-4">
+        <div className="bg-slate-900/90 border border-slate-800/80 rounded-3xl p-5 sm:p-6 shadow-2xl backdrop-blur-xl space-y-4">
           <div className="text-center pb-1">
             <h2 className="text-lg font-extrabold text-slate-100">
               Acessar sua Conta
@@ -98,59 +98,61 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
             </div>
           )}
 
-          {/* Formulário de LOGIN */}
+          {/* Formulário de LOGIN com prefixos de ícones isolados */}
           <form onSubmit={handleLoginSubmit} className="space-y-4">
+            {/* Campo E-mail */}
             <div className="space-y-1.5">
               <label className="block text-xs font-bold text-slate-300">
                 E-mail de Acesso
               </label>
-              <div className="relative flex items-center">
-                <div className="absolute left-3.5 flex items-center pointer-events-none text-slate-400">
-                  <Mail className="w-4 h-4" />
+              <div className="flex items-center rounded-2xl bg-slate-950 border border-slate-800/90 overflow-hidden focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 transition-all shadow-inner">
+                <div className="px-3.5 text-slate-400 flex items-center justify-center shrink-0 border-r border-slate-800/80 py-3 bg-slate-900/40">
+                  <Mail className="w-4 h-4 text-indigo-400" />
                 </div>
                 <input
                   type="email"
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
                   placeholder="seu.email@empresa.com.br"
-                  style={{ paddingLeft: '2.6rem', paddingRight: '1rem' }}
-                  className="w-full bg-slate-950/90 border border-slate-800 rounded-xl py-3 text-xs text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none font-medium transition-all"
+                  className="w-full bg-transparent px-3 py-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none font-medium border-none"
                   required
                 />
               </div>
             </div>
 
+            {/* Campo Senha */}
             <div className="space-y-1.5">
               <label className="block text-xs font-bold text-slate-300">
                 Senha Secreta
               </label>
-              <div className="relative flex items-center">
-                <div className="absolute left-3.5 flex items-center pointer-events-none text-slate-400">
-                  <Lock className="w-4 h-4" />
+              <div className="flex items-center rounded-2xl bg-slate-950 border border-slate-800/90 overflow-hidden focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 transition-all shadow-inner">
+                <div className="px-3.5 text-slate-400 flex items-center justify-center shrink-0 border-r border-slate-800/80 py-3 bg-slate-900/40">
+                  <Lock className="w-4 h-4 text-indigo-400" />
                 </div>
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={loginSenha}
                   onChange={(e) => setLoginSenha(e.target.value)}
                   placeholder="Sua senha secreta"
-                  style={{ paddingLeft: '2.6rem', paddingRight: '2.6rem' }}
-                  className="w-full bg-slate-950/90 border border-slate-800 rounded-xl py-3 text-xs text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none font-medium transition-all"
+                  className="w-full bg-transparent px-3 py-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none font-medium border-none"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 text-slate-400 hover:text-white p-1 flex items-center"
+                  className="px-3 text-slate-400 hover:text-white flex items-center justify-center shrink-0 p-2"
+                  title={showPassword ? "Ocultar senha" : "Mostrar senha"}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
 
+            {/* Botão Acessar */}
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50 mt-2"
+              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50 mt-2 cursor-pointer"
             >
               {isLoading ? (
                 <span>Acessando...</span>
