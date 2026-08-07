@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Printer, FileText, CheckCircle2, AlertTriangle, PieChart, ShieldCheck } from 'lucide-react';
+import { X, Printer, FileText, CheckCircle2, AlertTriangle, PieChart } from 'lucide-react';
 import { Cobranca, Cliente } from '../types';
 import { formatCurrency, formatDateBR } from '../utils/whatsapp';
 import { formatCNPJ } from '../services/storage';
@@ -81,7 +81,6 @@ export function gerarEImprimirRelatorioPDF(
     : listaFiltrada.map((item, idx) => {
         const cli = clientes.find(c => c.id === item.clienteId || c.nome === item.clienteNome);
         const doc = item.clienteDocumento || cli?.documento || '-';
-        const dataBaixa = item.dataPagamento ? formatDateBR(item.dataPagamento) : '-';
         const mesRefFinal = item.mesReferencia || (item.dataVencimento ? `${item.dataVencimento.split('-')[1]}/${item.dataVencimento.split('-')[0]}` : '-');
         
         let statusBadgeHtml = '';
@@ -111,68 +110,6 @@ export function gerarEImprimirRelatorioPDF(
           </tr>
         `;
       }).join('');
-
-  // Caixas de Resumo
-  let summaryBoxesHtml = '';
-  if (tipo === 'quitadas') {
-    summaryBoxesHtml = `
-      <div class="summary-box">
-        <div style="flex: 1;">
-          <span style="font-size: 9px; font-weight: 700; color: #64748b; text-transform: uppercase;">Total Geral Quitado</span>
-          <div style="font-size: 15px; font-weight: 900; color: #047857; margin-top: 1px;">${formatCurrency(totalQuitado)}</div>
-        </div>
-        <div style="flex: 1;">
-          <span style="font-size: 9px; font-weight: 700; color: #64748b; text-transform: uppercase;">Qtd. Títulos Baixados</span>
-          <div style="font-size: 15px; font-weight: 900; color: #0f172a; margin-top: 1px;">${quitadas.length} cobrança(s)</div>
-        </div>
-        <div style="flex: 1;">
-          <span style="font-size: 9px; font-weight: 700; color: #64748b; text-transform: uppercase;">Status da Carteira</span>
-          <div style="font-size: 11px; font-weight: 800; color: #047857; margin-top: 3px;">✔ 100% Liquidadas</div>
-        </div>
-      </div>
-    `;
-  } else if (tipo === 'em_aberto') {
-    summaryBoxesHtml = `
-      <div class="summary-box">
-        <div style="flex: 1;">
-          <span style="font-size: 9px; font-weight: 700; color: #64748b; text-transform: uppercase;">Total A Receber (Pendentes)</span>
-          <div style="font-size: 14px; font-weight: 900; color: #b45309; margin-top: 1px;">${formatCurrency(totalPendente)}</div>
-          <span style="font-size: 8.5px; color: #64748b;">${pendentes.length} cobrança(s)</span>
-        </div>
-        <div style="flex: 1;">
-          <span style="font-size: 9px; font-weight: 700; color: #b91c1c; text-transform: uppercase;">Total em Atraso (Vencidos)</span>
-          <div style="font-size: 14px; font-weight: 900; color: #b91c1c; margin-top: 1px;">${formatCurrency(totalAtrasado)}</div>
-          <span style="font-size: 8.5px; color: #b91c1c; font-weight: 700;">${atrasados.length} cobrança(s)</span>
-        </div>
-        <div style="flex: 1;">
-          <span style="font-size: 9px; font-weight: 700; color: #0f172a; text-transform: uppercase;">Total Carteira em Aberto</span>
-          <div style="font-size: 15px; font-weight: 900; color: #0f172a; margin-top: 1px;">${formatCurrency(totalEmAberto)}</div>
-          <span style="font-size: 8.5px; color: #64748b;">${listaFiltrada.length} título(s) total</span>
-        </div>
-      </div>
-    `;
-  } else {
-    summaryBoxesHtml = `
-      <div class="summary-box">
-        <div style="flex: 1;">
-          <span style="font-size: 9px; font-weight: 700; color: #047857; text-transform: uppercase;">Total Quitado</span>
-          <div style="font-size: 13px; font-weight: 900; color: #047857;">${formatCurrency(totalQuitado)}</div>
-        </div>
-        <div style="flex: 1;">
-          <span style="font-size: 9px; font-weight: 700; color: #b45309; text-transform: uppercase;">A Receber</span>
-          <div style="font-size: 13px; font-weight: 900; color: #b45309;">${formatCurrency(totalPendente)}</div>
-        </div>
-        <div style="flex: 1;">
-          <span style="font-size: 9px; font-weight: 700; color: #b91c1c; text-transform: uppercase;">Em Atraso</span>
-          <div style="font-size: 13px; font-weight: 900; color: #b91c1c;">${formatCurrency(totalAtrasado)}</div>
-        </div>
-        <div style="flex: 1;">
-          <span style="font-size: 9px; font-weight: 700; color: #0f172a; text-transform: uppercase;">Total Geral</span>
-          <div style="font-size: 14px; font-weight: 900; color: #4338ca;">${formatCurrency(totalGeralCarteira)}</div>
-        </div>
-      </div>
-    `;
-  }
 
   const totalFormatadoRodape = 
     tipo === 'quitadas' ? formatCurrency(totalQuitado) :
@@ -206,18 +143,7 @@ export function gerarEImprimirRelatorioPDF(
           align-items: flex-start;
           border-bottom: 3px solid #0f172a;
           padding-bottom: 8px;
-          margin-bottom: 10px;
-          break-inside: avoid;
-          page-break-inside: avoid;
-        }
-        .summary-box {
-          display: flex;
-          gap: 10px;
-          background: #f8fafc;
-          border: 1px solid #e2e8f0;
-          padding: 8px 12px;
-          border-radius: 8px;
-          margin-bottom: 10px;
+          margin-bottom: 14px;
           break-inside: avoid;
           page-break-inside: avoid;
         }
@@ -266,8 +192,6 @@ export function gerarEImprimirRelatorioPDF(
         </div>
       </div>
 
-      ${summaryBoxesHtml}
-
       <table>
         <thead>
           <tr>
@@ -286,8 +210,8 @@ export function gerarEImprimirRelatorioPDF(
         </tbody>
         <tfoot>
           <tr style="background: #0f172a; color: #ffffff; font-weight: 900; font-size: 9.5px;">
-            <td colspan="7" style="padding: 6px 8px; text-align: right; text-transform: uppercase;">TOTAL DO RELATÓRIO:</td>
-            <td style="padding: 6px 8px; text-align: right; color: #34d399; font-size: 11.5px;">${totalFormatadoRodape}</td>
+            <td colspan="7" style="padding: 7px 8px; text-align: right; text-transform: uppercase;">TOTAL DO RELATÓRIO:</td>
+            <td style="padding: 7px 8px; text-align: right; color: #34d399; font-size: 11.5px;">${totalFormatadoRodape}</td>
           </tr>
         </tfoot>
       </table>
