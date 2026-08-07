@@ -1,5 +1,7 @@
 import { neon } from '@neondatabase/serverless';
 
+declare const process: any;
+
 export default async function handler(req: any, res: any) {
   // Configura CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
