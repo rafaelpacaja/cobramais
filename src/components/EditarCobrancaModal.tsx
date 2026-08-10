@@ -250,6 +250,8 @@ export const EditarCobrancaModal: React.FC<EditarCobrancaModalProps> = ({
                 <option value="Vendas">Vendas de Produtos</option>
                 <option value="Consultoria">Consultoria</option>
                 <option value="Mensalidade">Mensalidade</option>
+                <option value="Semestre">Semestre</option>
+                <option value="Anuidade">Anuidade</option>
                 <option value="Outros">Outros</option>
               </select>
             </div>

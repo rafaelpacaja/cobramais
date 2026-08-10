@@ -129,24 +129,44 @@ export const CobrancaList: React.FC<CobrancaListProps> = ({
         </div>
       </div>
 
-      {/* Campo de Busca */}
-      <div className="relative w-full">
-        <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Buscar cliente, valor, mês ref (ex: 08/2026)..."
-          className="w-full bg-slate-900/90 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-medium"
-        />
-        {searchQuery && (
-          <button 
-            onClick={() => setSearchQuery('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-white"
+      {/* Campo de Busca & Seletor de Categoria */}
+      <div className="flex flex-col sm:flex-row items-center gap-2 w-full">
+        <div className="relative flex-1 w-full">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Buscar cliente, valor, mês ref (ex: 08/2026)..."
+            className="w-full bg-slate-900/90 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-medium"
+          />
+          {searchQuery && (
+            <button 
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-white"
+            >
+              Limpar
+            </button>
+          )}
+        </div>
+
+        <div className="w-full sm:w-auto shrink-0 flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2">
+          <span className="text-xs font-semibold text-slate-400">Categoria:</span>
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="bg-transparent text-xs font-bold text-slate-100 focus:outline-none cursor-pointer"
           >
-            Limpar
-          </button>
-        )}
+            <option value="todas" className="bg-slate-900 text-slate-100">Todas</option>
+            <option value="Serviços" className="bg-slate-900 text-slate-100">Serviços</option>
+            <option value="Vendas" className="bg-slate-900 text-slate-100">Vendas de Produtos</option>
+            <option value="Consultoria" className="bg-slate-900 text-slate-100">Consultoria</option>
+            <option value="Mensalidade" className="bg-slate-900 text-slate-100">Mensalidade</option>
+            <option value="Semestre" className="bg-slate-900 text-slate-100">Semestre</option>
+            <option value="Anuidade" className="bg-slate-900 text-slate-100">Anuidade</option>
+            <option value="Outros" className="bg-slate-900 text-slate-100">Outros</option>
+          </select>
+        </div>
       </div>
 
       {/* Abas de Filtro de Status */}
