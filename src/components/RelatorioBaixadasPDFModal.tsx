@@ -14,6 +14,7 @@ interface RelatorioPDFModalProps {
   nomeEmpresa: string;
   cnpjEmpresa?: string;
   tipoInicial?: TipoRelatorioPDF;
+  subtituloPeriodo?: string;
 }
 
 export function gerarEImprimirRelatorioPDF(
@@ -21,7 +22,8 @@ export function gerarEImprimirRelatorioPDF(
   clientes: Cliente[],
   nomeEmpresa: string,
   cnpjEmpresa: string | undefined,
-  tipo: TipoRelatorioPDF
+  tipo: TipoRelatorioPDF,
+  subtituloPeriodo?: string
 ) {
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
@@ -202,7 +204,7 @@ export function gerarEImprimirRelatorioPDF(
             <span style="background: ${badgeHeaderBg}; color: ${badgeHeaderColor}; font-weight: 800; padding: 2px 7px; border-radius: 4px; font-size: 9px;">${badgeHeader}</span>
           </div>
           <h1 style="font-size: 17px; font-weight: 900; margin: 4px 0 1px 0; color: #0f172a;">${nomeEmpresa || 'COMPUSERVE LTDA'}</h1>
-          <p style="font-size: 10.5px; font-weight: 800; color: #4338ca; margin: 0 0 2px 0;">CNPJ: ${cnpjExibicao}</p>
+          <p style="font-size: 10.5px; font-weight: 800; color: #4338ca; margin: 0 0 2px 0;">CNPJ: ${cnpjExibicao} ${subtituloPeriodo ? ` &bull; <span style="color: #047857; font-weight: 900;">${subtituloPeriodo}</span>` : ''}</p>
           <p style="font-size: 9.5px; color: #64748b; margin: 0;">${subTituloRelatorio}</p>
         </div>
         <div style="text-align: right; font-size: 10px;">
@@ -269,7 +271,8 @@ export const RelatorioBaixadasPDFModal: React.FC<RelatorioPDFModalProps> = ({
   clientes,
   nomeEmpresa,
   cnpjEmpresa,
-  tipoInicial = 'quitadas'
+  tipoInicial = 'quitadas',
+  subtituloPeriodo
 }) => {
   const [tipo, setTipo] = useState<TipoRelatorioPDF>(tipoInicial);
 
@@ -285,7 +288,7 @@ export const RelatorioBaixadasPDFModal: React.FC<RelatorioPDFModalProps> = ({
   const totalGeral = cobrancas.reduce((acc, c) => acc + c.valor, 0);
 
   const handleGerarPDF = () => {
-    gerarEImprimirRelatorioPDF(cobrancas, clientes, nomeEmpresa, cnpjEmpresa, tipo);
+    gerarEImprimirRelatorioPDF(cobrancas, clientes, nomeEmpresa, cnpjEmpresa, tipo, subtituloPeriodo);
     onClose();
   };
 
@@ -297,9 +300,16 @@ export const RelatorioBaixadasPDFModal: React.FC<RelatorioPDFModalProps> = ({
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <div className="flex items-center space-x-2 text-indigo-400">
             <FileText className="w-5 h-5" />
-            <h2 className="text-base font-extrabold text-slate-100">
-              Gerar Relatório em PDF (A4)
-            </h2>
+            <div>
+              <h2 className="text-base font-extrabold text-slate-100 text-left">
+                Gerar Relatório em PDF (A4)
+              </h2>
+              {subtituloPeriodo && (
+                <p className="text-[11px] font-bold text-emerald-400 text-left">
+                  {subtituloPeriodo}
+                </p>
+              )}
+            </div>
           </div>
           <button
             onClick={onClose}

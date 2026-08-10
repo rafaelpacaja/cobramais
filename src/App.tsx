@@ -64,6 +64,8 @@ export const App: React.FC = () => {
   const [reciboConfetti, setReciboConfetti] = useState(false);
   const [isRelatorioPDFOpen, setIsRelatorioPDFOpen] = useState(false);
   const [tipoRelatorioPDF, setTipoRelatorioPDF] = useState<TipoRelatorioPDF>('quitadas');
+  const [cobrancasParaPDF, setCobrancasParaPDF] = useState<Cobranca[]>([]);
+  const [subtituloPeriodoPDF, setSubtituloPeriodoPDF] = useState<string>('');
 
   // Carrega dados iniciais do LocalStorage e sincroniza com o Neon Database
   useEffect(() => {
@@ -450,8 +452,10 @@ export const App: React.FC = () => {
           <RelatoriosView
             cobrancas={cobrancas}
             indicadores={indicadores}
-            onOpenRelatorioPDF={(tipo = 'quitadas') => {
+            onOpenRelatorioPDF={(tipo = 'quitadas', cobrancasFiltradas, subtitulo) => {
               setTipoRelatorioPDF(tipo);
+              setCobrancasParaPDF(cobrancasFiltradas || cobrancas);
+              setSubtituloPeriodoPDF(subtitulo || '');
               setIsRelatorioPDFOpen(true);
             }}
           />
@@ -560,11 +564,12 @@ export const App: React.FC = () => {
       <RelatorioBaixadasPDFModal
         isOpen={isRelatorioPDFOpen}
         onClose={() => setIsRelatorioPDFOpen(false)}
-        cobrancas={cobrancas}
+        cobrancas={cobrancasParaPDF.length > 0 ? cobrancasParaPDF : cobrancas}
         clientes={clientes}
         nomeEmpresa={config.nomeEmpresa}
         cnpjEmpresa={config.cnpjEmpresa}
         tipoInicial={tipoRelatorioPDF}
+        subtituloPeriodo={subtituloPeriodoPDF}
       />
     </div>
   );
