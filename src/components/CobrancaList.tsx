@@ -197,6 +197,12 @@ export const CobrancaList: React.FC<CobrancaListProps> = ({
       ) : (
         <div className="space-y-3 w-full">
           {cobrancasFiltradas.map((cob) => {
+            const keyNome = cob.clienteNome.trim().toLowerCase();
+            const abertasDoCliente = cobrancas.filter(c => 
+              (c.clienteId === cob.clienteId || c.clienteNome.trim().toLowerCase() === keyNome) &&
+              (c.status === 'pendente' || c.status === 'atrasado')
+            );
+
             return (
               <div 
                 key={cob.id}
@@ -211,9 +217,18 @@ export const CobrancaList: React.FC<CobrancaListProps> = ({
                 {/* Cabeçalho do Card */}
                 <div className="flex items-start justify-between gap-2 w-full">
                   <div className="min-w-0 flex-1">
-                    <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${getBadgeClass(cob.status)}`}>
-                      {cob.status}
-                    </span>
+                    <div className="flex items-center flex-wrap gap-1">
+                      <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${getBadgeClass(cob.status)}`}>
+                        {cob.status}
+                      </span>
+
+                      {abertasDoCliente.length > 1 && (
+                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                          ⚠️ {abertasDoCliente.length} em aberto
+                        </span>
+                      )}
+                    </div>
+
                     <h3 className="text-sm sm:text-base font-extrabold text-slate-100 mt-1 truncate">
                       {cob.clienteNome}
                     </h3>

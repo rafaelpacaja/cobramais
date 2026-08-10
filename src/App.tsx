@@ -207,20 +207,21 @@ export const App: React.FC = () => {
   };
 
   const handleConfirmarBaixaComMesRef = (
-    cobrancaId: string, 
-    dadosBaixa: { mesReferencia: string; dataPagamento: string; formaPagamento: FormaPagamento }
+    cobrancaIds: string[], 
+    dadosBaixa: { mesReferencia?: string; dataPagamento: string; formaPagamento: FormaPagamento }
   ) => {
-    let cobrancaQuitada: Cobranca | null = null;
+    let cobrancasQuitadas: Cobranca[] = [];
     const updated = cobrancas.map(c => {
-      if (c.id === cobrancaId) {
+      if (cobrancaIds.includes(c.id)) {
+        const mesRefFinal = dadosBaixa.mesReferencia || c.mesReferencia || (c.dataVencimento ? `${c.dataVencimento.split('-')[1]}/${c.dataVencimento.split('-')[0]}` : '');
         const item: Cobranca = {
           ...c,
           status: 'pago' as const,
-          mesReferencia: dadosBaixa.mesReferencia,
+          mesReferencia: mesRefFinal,
           dataPagamento: dadosBaixa.dataPagamento,
           formaPagamento: dadosBaixa.formaPagamento
         };
-        cobrancaQuitada = item;
+        cobrancasQuitadas.push(item);
         return item;
       }
       return c;
@@ -229,11 +230,12 @@ export const App: React.FC = () => {
     setCobrancas(updated);
     saveCobrancas(updated);
 
-    if (cobrancaQuitada) {
-      const selectedCli = clientes.find(cli => cli.id === (cobrancaQuitada as Cobranca).clienteId || cli.nome === (cobrancaQuitada as Cobranca).clienteNome);
+    if (cobrancasQuitadas.length > 0) {
+      const ultimaQuitada = cobrancasQuitadas[0];
+      const selectedCli = clientes.find(cli => cli.id === ultimaQuitada.clienteId || cli.nome === ultimaQuitada.clienteNome);
       const targetUpdated: Cobranca = {
-        ...(cobrancaQuitada as Cobranca),
-        clienteDocumento: (cobrancaQuitada as Cobranca).clienteDocumento || selectedCli?.documento
+        ...ultimaQuitada,
+        clienteDocumento: ultimaQuitada.clienteDocumento || selectedCli?.documento
       };
       setReciboCobranca(targetUpdated);
       setReciboConfetti(true);
@@ -516,6 +518,7 @@ export const App: React.FC = () => {
         isOpen={!!cobrancaParaBaixar}
         onClose={() => setCobrancaParaBaixar(null)}
         cobranca={cobrancaParaBaixar}
+        todasCobrancas={cobrancas}
         onConfirmarBaixa={handleConfirmarBaixaComMesRef}
       />
 
