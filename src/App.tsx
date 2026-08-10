@@ -340,7 +340,13 @@ export const App: React.FC = () => {
   };
 
   const handleDeletarCobranca = (cobrancaId: string) => {
-    if (confirm('Tem certeza que deseja excluir esta cobrança?')) {
+    const cob = cobrancas.find(c => c.id === cobrancaId);
+    if (!cob) return;
+
+    const mesRefStr = cob.mesReferencia || (cob.dataVencimento ? `${cob.dataVencimento.split('-')[1]}/${cob.dataVencimento.split('-')[0]}` : '');
+    const confirmMsg = `Deseja excluir APENAS ESTA cobrança (${cob.descricao} - Ref: ${mesRefStr}) de ${cob.clienteNome}?\n\n(As outras cobranças deste cliente continuarão preservadas no sistema).`;
+
+    if (confirm(confirmMsg)) {
       const updated = cobrancas.filter(c => c.id !== cobrancaId);
       setCobrancas(updated);
       saveCobrancas(updated);
