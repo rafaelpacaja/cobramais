@@ -28,8 +28,8 @@ export const NovaCobrancaModal: React.FC<NovaCobrancaModalProps> = ({
   const [valor, setValor] = useState('');
   const [dataVencimento, setDataVencimento] = useState(() => {
     const d = new Date();
-    d.setDate(d.getDate() + 5);
-    return d.toISOString().split('T')[0];
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    return `${d.getFullYear()}-${mm}-05`;
   });
 
   const [mesReferencia, setMesReferencia] = useState(() => {

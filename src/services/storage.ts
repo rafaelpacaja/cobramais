@@ -110,13 +110,24 @@ const seedCobrancas: Cobranca[] = [
 export function updateOverdueStatuses(cobrancas: Cobranca[]): Cobranca[] {
   const currentDate = getTodayString();
   return cobrancas.map(c => {
-    if (c.status === 'pago' || c.status === 'cancelado') return c;
+    let venc = c.dataVencimento;
+    // As mensalidades vencem rigorosamente no dia 05 de cada mês
+    if (venc && venc.includes('-')) {
+      const parts = venc.split('-');
+      if (parts.length === 3 && parts[2] !== '05') {
+        venc = `${parts[0]}-${parts[1]}-05`;
+      }
+    }
 
-    const isoVenc = parseDateToISO(c.dataVencimento);
+    const itemCorrigido = venc !== c.dataVencimento ? { ...c, dataVencimento: venc } : c;
+
+    if (itemCorrigido.status === 'pago' || itemCorrigido.status === 'cancelado') return itemCorrigido;
+
+    const isoVenc = parseDateToISO(itemCorrigido.dataVencimento);
     if (isoVenc <= currentDate) {
-      return { ...c, status: 'atrasado' as const };
+      return { ...itemCorrigido, status: 'atrasado' as const };
     } else {
-      return { ...c, status: 'pendente' as const };
+      return { ...itemCorrigido, status: 'pendente' as const };
     }
   });
 }

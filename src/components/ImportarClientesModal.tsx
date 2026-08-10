@@ -73,21 +73,26 @@ export const ImportarClientesModal: React.FC<ImportarClientesModalProps> = ({
         if (vencStr.includes('/')) {
           const parts = vencStr.split('/');
           if (parts.length === 3) {
-            dataVenc = `${parts[2].padStart(4, '20')}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+            dataVenc = `${parts[2].padStart(4, '20')}-${parts[1].padStart(2, '0')}-05`;
           }
         } else if (vencStr.includes('-')) {
-          dataVenc = vencStr;
+          const parts = vencStr.split('-');
+          if (parts.length === 3) {
+            dataVenc = `${parts[0]}-${parts[1]}-05`;
+          }
         }
       }
 
       const itemValido = nome.length >= 2;
+      const today = new Date();
+      const defaultVenc05 = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-05`;
 
       parsed.push({
         nome: nome || 'Sem Nome',
         telefone: telefone || '(00) 00000-0000',
         documento: documento || undefined,
         valor: valorNum,
-        dataVencimento: dataVenc || new Date().toISOString().split('T')[0],
+        dataVencimento: dataVenc || defaultVenc05,
         descricao: descStr || (valorNum ? 'Mensalidade do Sistema Compuserve' : undefined),
         valido: itemValido,
         erro: !itemValido ? 'Nome do cliente é obrigatório' : undefined
