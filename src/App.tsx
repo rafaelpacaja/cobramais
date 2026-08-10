@@ -18,6 +18,7 @@ import {
   AppConfig 
 } from './services/storage';
 import { Cliente, Cobranca, FormaPagamento, TabType, Usuario } from './types';
+import { formatCurrency } from './utils/whatsapp';
 
 // Componentes
 import { Header } from './components/Header';
@@ -377,7 +378,26 @@ export const App: React.FC = () => {
   };
 
   const handleDeletarCliente = (clienteId: string) => {
-    if (confirm('Tem certeza que deseja excluir este cliente?')) {
+    const cli = clientes.find(c => c.id === clienteId);
+    if (!cli) return;
+
+    const keyNome = cli.nome.trim().toLowerCase();
+    const pendencias = cobrancas.filter(c => 
+      (c.clienteId === clienteId || c.clienteNome.trim().toLowerCase() === keyNome) &&
+      (c.status === 'pendente' || c.status === 'atrasado')
+    );
+
+    if (pendencias.length > 0) {
+      const totalDebitos = pendencias.reduce((sum, item) => sum + item.valor, 0);
+      alert(
+        `⛔ NÃO É POSSÍVEL EXCLUIR O CLIENTE "${cli.nome.toUpperCase()}"!\n\n` +
+        `Este cliente possui ${pendencias.length} débito(s) em aberto no valor total de ${formatCurrency(totalDebitos)}.\n\n` +
+        `Por favor, dê baixa (quite) ou exclua as cobranças pendentes antes de remover o cadastro do cliente.`
+      );
+      return;
+    }
+
+    if (confirm(`Tem certeza que deseja excluir o cadastro de "${cli.nome}"?`)) {
       const updatedClientes = clientes.filter(c => c.id !== clienteId);
       setClientes(updatedClientes);
       saveClientes(updatedClientes);
