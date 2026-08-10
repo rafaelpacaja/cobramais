@@ -40,6 +40,7 @@ import { WhatsAppModal } from './components/WhatsAppModal';
 import { ReciboModal } from './components/ReciboModal';
 import { ImportarClientesModal } from './components/ImportarClientesModal';
 import { RelatorioBaixadasPDFModal, TipoRelatorioPDF } from './components/RelatorioBaixadasPDFModal';
+import { ExcluirCobrancasModal } from './components/ExcluirCobrancasModal';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
@@ -68,6 +69,7 @@ export const App: React.FC = () => {
   const [tipoRelatorioPDF, setTipoRelatorioPDF] = useState<TipoRelatorioPDF>('quitadas');
   const [cobrancasParaPDF, setCobrancasParaPDF] = useState<Cobranca[]>([]);
   const [subtituloPeriodoPDF, setSubtituloPeriodoPDF] = useState<string>('');
+  const [cobrancaParaExcluir, setCobrancaParaExcluir] = useState<Cobranca | null>(null);
 
   // Carrega dados iniciais do LocalStorage e sincroniza com o Neon Database
   useEffect(() => {
@@ -341,17 +343,17 @@ export const App: React.FC = () => {
 
   const handleDeletarCobranca = (cobrancaId: string) => {
     const cob = cobrancas.find(c => c.id === cobrancaId);
-    if (!cob) return;
-
-    const mesRefStr = cob.mesReferencia || (cob.dataVencimento ? `${cob.dataVencimento.split('-')[1]}/${cob.dataVencimento.split('-')[0]}` : '');
-    const confirmMsg = `Deseja excluir APENAS ESTA cobrança (${cob.descricao} - Ref: ${mesRefStr}) de ${cob.clienteNome}?\n\n(As outras cobranças deste cliente continuarão preservadas no sistema).`;
-
-    if (confirm(confirmMsg)) {
-      const updated = cobrancas.filter(c => c.id !== cobrancaId);
-      setCobrancas(updated);
-      saveCobrancas(updated);
-      deleteCobrancaFromNeon(cobrancaId);
+    if (cob) {
+      setCobrancaParaExcluir(cob);
     }
+  };
+
+  const handleConfirmarExclusaoMultipla = (cobrancaIds: string[]) => {
+    const updated = cobrancas.filter(c => !cobrancaIds.includes(c.id));
+    setCobrancas(updated);
+    saveCobrancas(updated);
+    cobrancaIds.forEach(id => deleteCobrancaFromNeon(id));
+    setCobrancaParaExcluir(null);
   };
 
   const handleLimparDuplicadas = () => {
@@ -583,6 +585,14 @@ export const App: React.FC = () => {
         cnpjEmpresa={config.cnpjEmpresa}
         tipoInicial={tipoRelatorioPDF}
         subtituloPeriodo={subtituloPeriodoPDF}
+      />
+
+      <ExcluirCobrancasModal
+        isOpen={!!cobrancaParaExcluir}
+        onClose={() => setCobrancaParaExcluir(null)}
+        cobranca={cobrancaParaExcluir}
+        todasCobrancas={cobrancas}
+        onConfirmarExclusao={handleConfirmarExclusaoMultipla}
       />
     </div>
   );
