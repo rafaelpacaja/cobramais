@@ -98,40 +98,40 @@ export default async function handler(req: any, res: any) {
       const cobrancasRows = await sql`SELECT * FROM cobrancas ORDER BY created_at DESC;`;
 
       const config = configRows.length > 0 ? {
-        nomeEmpresa: configRows[0].nome_empresa,
-        cnpjEmpresa: configRows[0].cnpj_empresa,
-        chavePixPadrao: configRows[0].chave_pix_padrao,
+        nomeEmpresa: configRows[0].nome_empresa || 'COMPUSERVE LTDA',
+        cnpjEmpresa: configRows[0].cnpj_empresa || '60.060.102/0001-24',
+        chavePixPadrao: configRows[0].chave_pix_padrao || '60.060.102/0001-24',
         diasAvisoVencimento: configRows[0].dias_aviso_vencimento || 3
       } : null;
 
-      const clientes = clientesRows.map((r: any) => ({
-        id: r.id,
-        nome: r.nome,
-        telefone: r.telefone || '',
-        email: r.email || '',
-        documento: r.documento || '',
-        observacoes: r.observacoes || '',
-        createdAt: r.created_at || new Date().toISOString()
+      const clientes = clientesRows.map((c: any) => ({
+        id: c.id,
+        nome: c.nome,
+        telefone: c.telefone || '',
+        email: c.email || '',
+        documento: c.documento || '',
+        observacoes: c.observacoes || '',
+        createdAt: c.created_at
       }));
 
-      const cobrancas = cobrancasRows.map((r: any) => ({
-        id: r.id,
-        clienteId: r.cliente_id,
-        clienteNome: r.cliente_nome,
-        clienteTelefone: r.cliente_telefone || '',
-        clienteDocumento: r.cliente_documento || '',
-        descricao: r.descricao,
-        valor: Number(r.valor),
-        dataVencimento: r.data_vencimento,
-        dataPagamento: r.data_pagamento || undefined,
-        mesReferencia: r.mes_referencia || undefined,
-        status: r.status,
-        formaPagamento: r.forma_pagamento,
-        chavePix: r.chave_pix || undefined,
-        categoria: r.categoria || undefined,
-        parcelaAtual: r.parcela_atual || undefined,
-        totalParcelas: r.total_parcelas || undefined,
-        createdAt: r.created_at || new Date().toISOString()
+      const cobrancas = cobrancasRows.map((c: any) => ({
+        id: c.id,
+        clienteId: c.cliente_id,
+        clienteNome: c.cliente_nome,
+        clienteTelefone: c.cliente_telefone || '',
+        clienteDocumento: c.cliente_documento || '',
+        descricao: c.descricao,
+        valor: Number(c.valor),
+        dataVencimento: c.data_vencimento,
+        dataPagamento: c.data_pagamento || undefined,
+        mesReferencia: c.mes_referencia || undefined,
+        status: c.status,
+        formaPagamento: c.forma_pagamento,
+        chavePix: c.chave_pix || undefined,
+        categoria: c.categoria || undefined,
+        parcelaAtual: c.parcela_atual ? Number(c.parcela_atual) : undefined,
+        totalParcelas: c.total_parcelas ? Number(c.total_parcelas) : undefined,
+        createdAt: c.created_at
       }));
 
       return res.status(200).json({
@@ -142,9 +142,27 @@ export default async function handler(req: any, res: any) {
       });
     }
 
-    // 3. Trata POST (Autenticação, Cadastro e Sincronização)
+    // 3. Trata POST (Salvar / Sincronizar / Deletar no Neon)
     if (req.method === 'POST') {
-      const { action, email, senha, nome, empresa, cnpj, telefone, config, clientes, cobrancas, senhaAtual, novaSenha } = req.body || {};
+      const body = req.body || {};
+      const { action, config, clientes, cobrancas, email, senha, senhaAtual, novaSenha, nome, empresa, cnpj, telefone, cobrancaId, clienteId } = body;
+
+      // Exclusão específica de cobrança no Neon
+      if (action === 'delete_cobranca') {
+        if (cobrancaId) {
+          await sql`DELETE FROM cobrancas WHERE id = ${cobrancaId};`;
+        }
+        return res.status(200).json({ success: true, message: 'Cobrança excluída do Neon.' });
+      }
+
+      // Exclusão específica de cliente no Neon
+      if (action === 'delete_cliente') {
+        if (clienteId) {
+          await sql`DELETE FROM clientes WHERE id = ${clienteId};`;
+          await sql`DELETE FROM cobrancas WHERE cliente_id = ${clienteId};`;
+        }
+        return res.status(200).json({ success: true, message: 'Cliente excluído do Neon.' });
+      }
 
       // Ação de Alteração de Senha
       if (action === 'change_password') {
@@ -251,6 +269,13 @@ export default async function handler(req: any, res: any) {
 
       // Sincroniza Clientes
       if (Array.isArray(clientes)) {
+        const currentCliIds = clientes.map(c => c.id).filter(Boolean);
+        if (currentCliIds.length > 0) {
+          await sql`DELETE FROM clientes WHERE NOT (id = ANY(${currentCliIds}));`;
+        } else {
+          await sql`DELETE FROM clientes;`;
+        }
+
         for (const cli of clientes) {
           await sql`
             INSERT INTO clientes (id, nome, telefone, email, documento, observacoes, created_at)
@@ -267,6 +292,13 @@ export default async function handler(req: any, res: any) {
 
       // Sincroniza Cobranças
       if (Array.isArray(cobrancas)) {
+        const currentCobIds = cobrancas.map(c => c.id).filter(Boolean);
+        if (currentCobIds.length > 0) {
+          await sql`DELETE FROM cobrancas WHERE NOT (id = ANY(${currentCobIds}));`;
+        } else {
+          await sql`DELETE FROM cobrancas;`;
+        }
+
         for (const cob of cobrancas) {
           await sql`
             INSERT INTO cobrancas (
@@ -300,9 +332,12 @@ export default async function handler(req: any, res: any) {
       return res.status(200).json({ connected: true, success: true });
     }
 
-    return res.status(405).json({ message: 'Método não suportado' });
-  } catch (error: any) {
-    console.error('Erro no Neon Database:', error);
-    return res.status(500).json({ connected: false, error: error.message });
+    return res.status(405).json({ message: 'Método não suportado.' });
+  } catch (err: any) {
+    console.error('Erro de conexão/operação no Neon Database:', err);
+    return res.status(500).json({ 
+      connected: false, 
+      message: err.message || 'Erro interno de servidor.' 
+    });
   }
 }

@@ -172,6 +172,30 @@ export async function pushToNeonDatabase() {
   }
 }
 
+export async function deleteCobrancaFromNeon(cobrancaId: string) {
+  try {
+    await fetch('/api/db', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'delete_cobranca', cobrancaId })
+    });
+  } catch (err) {
+    // Falha silenciosa em caso de offline
+  }
+}
+
+export async function deleteClienteFromNeon(clienteId: string) {
+  try {
+    await fetch('/api/db', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'delete_cliente', clienteId })
+    });
+  } catch (err) {
+    // Falha silenciosa em caso de offline
+  }
+}
+
 export function getClientes(): Cliente[] {
   try {
     const data = localStorage.getItem(CLIENTES_STORAGE_KEY);

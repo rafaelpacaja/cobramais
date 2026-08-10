@@ -13,6 +13,8 @@ import {
   getUsuarioLogado,
   saveUsuarioLogado,
   logoutUsuario,
+  deleteCobrancaFromNeon,
+  deleteClienteFromNeon,
   AppConfig 
 } from './services/storage';
 import { Cliente, Cobranca, FormaPagamento, TabType, Usuario } from './types';
@@ -342,6 +344,7 @@ export const App: React.FC = () => {
       const updated = cobrancas.filter(c => c.id !== cobrancaId);
       setCobrancas(updated);
       saveCobrancas(updated);
+      deleteCobrancaFromNeon(cobrancaId);
     }
   };
 
@@ -370,6 +373,7 @@ export const App: React.FC = () => {
       const updatedClientes = clientes.filter(c => c.id !== clienteId);
       setClientes(updatedClientes);
       saveClientes(updatedClientes);
+      deleteClienteFromNeon(clienteId);
     }
   };
 
