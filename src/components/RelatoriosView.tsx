@@ -10,7 +10,8 @@ import {
   Calendar,
   Filter,
   Layers,
-  CalendarDays
+  CalendarDays,
+  Receipt
 } from 'lucide-react';
 import { Cobranca, IndicadoresFinanceiros } from '../types';
 import { formatCurrency, formatDateBR } from '../utils/whatsapp';
@@ -22,12 +23,14 @@ interface RelatoriosViewProps {
   cobrancas: Cobranca[];
   indicadores: IndicadoresFinanceiros;
   onOpenRelatorioPDF: (tipo?: TipoRelatorioPDF, cobrancasFiltradas?: Cobranca[], subtituloPeriodo?: string) => void;
+  onOpenReciboAvulso?: () => void;
 }
 
 export const RelatoriosView: React.FC<RelatoriosViewProps> = ({ 
   cobrancas, 
   indicadores: indicadoresGlobais,
-  onOpenRelatorioPDF
+  onOpenRelatorioPDF,
+  onOpenReciboAvulso
 }) => {
   const [tipoFiltro, setTipoFiltro] = useState<TipoFiltroPeriodo>('todos');
 
@@ -163,8 +166,19 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
           </p>
         </div>
 
-        {/* Botão de PDF + Botão CSV */}
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Botão Recibo Avulso + Botão de PDF + Botão CSV */}
+        <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+          {onOpenReciboAvulso && (
+            <button
+              onClick={onOpenReciboAvulso}
+              className="h-9 px-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs shadow-md shadow-purple-900/30 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap active:scale-95 cursor-pointer"
+              title="Emitir Recibo de Quitação Avulso em PDF A4 ou Cupom Térmico (40 Colunas)"
+            >
+              <Receipt className="w-3.5 h-3.5 shrink-0" />
+              <span>Recibo Avulso</span>
+            </button>
+          )}
+
           <button
             onClick={handleOpenPDF}
             className="h-9 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-md shadow-emerald-900/30 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap active:scale-95 cursor-pointer"

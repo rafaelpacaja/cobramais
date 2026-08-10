@@ -155,6 +155,109 @@ export function imprimirReciboDocumento(
   printWindow.document.close();
 }
 
+export function imprimirReciboCupomDocumento(
+  cobranca: Cobranca,
+  documentoCliente: string | null,
+  nomeEmpresa: string,
+  cnpjEmpresa?: string
+) {
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    alert('Por favor, permita pop-ups no seu navegador para imprimir o recibo em cupom.');
+    return;
+  }
+
+  const dataPagamento = cobranca.dataPagamento ? formatDateBR(cobranca.dataPagamento) : formatDateBR(new Date().toISOString().split('T')[0]);
+  const docText = documentoCliente ? `(CPF/CNPJ: ${documentoCliente})` : '';
+
+  let phoneClean = cobranca.clienteTelefone || '';
+  if (phoneClean.includes(',') || phoneClean.includes('R$')) {
+    phoneClean = '';
+  }
+
+  const mesRefFinal = cobranca.mesReferencia || (cobranca.dataVencimento ? `${cobranca.dataVencimento.split('-')[1]}/${cobranca.dataVencimento.split('-')[0]}` : '');
+  const cnpjExibicao = formatCNPJ(cnpjEmpresa || '60.060.102/0001-24');
+  const reciboId = cobranca.id.slice(0, 10).toUpperCase();
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+      <meta charset="UTF-8">
+      <title>Cupom Recibo 40 Colunas - ${nomeEmpresa}</title>
+      <style>
+        @page {
+          size: 80mm auto;
+          margin: 0;
+        }
+        body {
+          font-family: 'Courier New', Courier, monospace;
+          width: 72mm;
+          margin: 0 auto;
+          padding: 8px 4px;
+          font-size: 11px;
+          color: #000000;
+          background: #ffffff;
+          line-height: 1.25;
+        }
+        .text-center { text-align: center; }
+        .bold { font-weight: bold; }
+        .dashed { border-bottom: 1px dashed #000000; margin: 6px 0; }
+        .double-dashed { border-bottom: 2px dashed #000000; margin: 6px 0; }
+        .title { font-size: 14px; font-weight: bold; margin: 4px 0; }
+        .price { font-size: 16px; font-weight: bold; margin: 6px 0; }
+      </style>
+    </head>
+    <body>
+      <div class="text-center">
+        <div class="title">${nomeEmpresa || 'COMPUSERVE LTDA'}</div>
+        <div>CNPJ: ${cnpjExibicao}</div>
+        <div class="double-dashed"></div>
+        <div class="bold">*** RECIBO DE QUITAÇÃO ***</div>
+        <div>RECIBO Nº #${reciboId}</div>
+        <div>Data Pagto: ${dataPagamento}</div>
+        <div class="dashed"></div>
+      </div>
+
+      <div><strong>PAGADOR:</strong> ${cobranca.clienteNome}</div>
+      ${docText ? `<div><strong>CPF/CNPJ:</strong> ${docText}</div>` : ''}
+      ${phoneClean ? `<div><strong>FONE:</strong> ${phoneClean}</div>` : ''}
+      <div class="dashed"></div>
+      <div><strong>REF:</strong> ${cobranca.descricao}</div>
+      <div><strong>MÊS REF:</strong> ${mesRefFinal}</div>
+      <div><strong>FORMA PGTO:</strong> ${cobranca.formaPagamento.toUpperCase()}</div>
+      <div class="dashed"></div>
+      
+      <div class="text-center">
+        <div>VALOR TOTAL QUITADO</div>
+        <div class="price">${formatCurrency(cobranca.valor)}</div>
+        <div class="dashed"></div>
+      </div>
+
+      <div style="font-size: 9.5px; text-align: justify; margin: 6px 0; line-height: 1.2;">
+        Declaramos ter recebido a quantia acima discriminada, dando por este termo a devida e plena quitação.
+      </div>
+      
+      <div class="dashed"></div>
+      <div class="text-center" style="margin-top: 18px;">
+        <div>___________________________________</div>
+        <div style="font-size: 9.5px; font-weight: bold; margin-top: 2px;">${nomeEmpresa || 'COMPUSERVE LTDA'}</div>
+        <div style="font-size: 8.5px;">CNPJ: ${cnpjExibicao}</div>
+      </div>
+
+      <script>
+        window.onload = function() {
+          setTimeout(function() {
+            window.print();
+          }, 300);
+        };
+      </script>
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
+}
+
 export const ReciboModal: React.FC<ReciboModalProps> = ({
   isOpen,
   onClose,
@@ -176,7 +279,7 @@ export const ReciboModal: React.FC<ReciboModalProps> = ({
 
   if (!isOpen || !cobranca) return null;
 
-  const clienteEncontrado = clientes.find(c => c.id === cobranca.clienteId || c.nome.toLowerCase() === cobranca.clienteNome.toLowerCase());
+const clienteEncontrado = clientes.find(c => c.id === cobranca.clienteId || c.nome.toLowerCase() === cobranca.clienteNome.toLowerCase());
   const documentoCliente = cobranca.clienteDocumento || clienteEncontrado?.documento || null;
   const dataPagamento = cobranca.dataPagamento ? formatDateBR(cobranca.dataPagamento) : formatDateBR(new Date().toISOString().split('T')[0]);
 
@@ -185,6 +288,10 @@ export const ReciboModal: React.FC<ReciboModalProps> = ({
 
   const handlePrint = () => {
     imprimirReciboDocumento(cobranca, documentoCliente, nomeEmpresa, cnpjEmpresa);
+  };
+
+  const handlePrintCupom = () => {
+    imprimirReciboCupomDocumento(cobranca, documentoCliente, nomeEmpresa, cnpjEmpresa);
   };
 
   const handleShareWhatsApp = (target: 'seletor' | 'business' | 'normal' = 'seletor') => {
@@ -239,60 +346,45 @@ export const ReciboModal: React.FC<ReciboModalProps> = ({
             </p>
           </div>
 
-          {/* Destaque do Valor */}
-          <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800/80 text-center space-y-0.5">
-            <span className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">
-              Valor Total Quitado
-            </span>
-            <p className="text-3xl font-black text-emerald-400">
+          {/* Valor Principal em Destaque */}
+          <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3.5 text-center space-y-0.5">
+            <span className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">Valor Total Quitado</span>
+            <div className="text-2xl font-black text-emerald-400">
               {formatCurrency(cobranca.valor)}
-            </p>
+            </div>
           </div>
 
-          {/* Grid de Informações do Pagador */}
-          <div className="space-y-2 text-xs border-t border-b border-slate-800/80 py-3">
-            <div className="flex justify-between items-start">
-              <span className="text-slate-500 font-medium">Pagador / Cliente:</span>
-              <div className="text-right">
-                <strong className="text-slate-100 font-bold block text-sm">
-                  {cobranca.clienteNome}
-                </strong>
-                {documentoCliente ? (
-                  <span className="text-[11px] font-semibold text-indigo-400 block mt-0.5">
-                    CNPJ/CPF: {documentoCliente}
-                  </span>
-                ) : (
-                  <span className="text-[10px] text-slate-500 italic block mt-0.5">
-                    CPF/CNPJ não informado
+          {/* Dados do Cliente e Cobranca */}
+          <div className="space-y-2 text-xs divide-y divide-slate-800/60">
+            <div className="flex justify-between pt-1">
+              <span className="text-slate-500 font-medium">Pagador:</span>
+              <span className="text-slate-100 font-bold text-right">
+                {cobranca.clienteNome}
+                {documentoCliente && (
+                  <span className="block text-[10px] text-indigo-300 font-semibold">
+                    ({documentoCliente})
                   </span>
                 )}
-              </div>
+              </span>
             </div>
 
-            {cobranca.clienteTelefone && !cobranca.clienteTelefone.includes(',') && (
-              <div className="flex justify-between">
-                <span className="text-slate-500 font-medium">Telefone de Contato:</span>
-                <span className="text-slate-300 font-medium">{cobranca.clienteTelefone}</span>
-              </div>
-            )}
-
-            <div className="flex justify-between">
+            <div className="flex justify-between pt-2">
               <span className="text-slate-500 font-medium">Referente a:</span>
-              <span className="text-slate-200 font-semibold">{cobranca.descricao}</span>
+              <span className="text-slate-200 font-bold text-right max-w-[220px] truncate">{cobranca.descricao}</span>
             </div>
 
-            <div className="flex justify-between">
+            <div className="flex justify-between pt-2">
               <span className="text-slate-500 font-medium">Mês de Referência:</span>
-              <span className="text-indigo-400 font-bold">{mesRefFinal}</span>
+              <span className="text-indigo-400 font-extrabold">{mesRefFinal}</span>
             </div>
 
-            <div className="flex justify-between">
+            <div className="flex justify-between pt-2">
               <span className="text-slate-500 font-medium">Forma de Pagamento:</span>
               <span className="text-slate-200 uppercase font-bold">{cobranca.formaPagamento}</span>
             </div>
 
             {cobranca.categoria && (
-              <div className="flex justify-between">
+              <div className="flex justify-between pt-2">
                 <span className="text-slate-500 font-medium">Categoria:</span>
                 <span className="text-slate-400">{cobranca.categoria}</span>
               </div>
@@ -316,22 +408,32 @@ export const ReciboModal: React.FC<ReciboModalProps> = ({
           </div>
         </div>
 
-        {/* Botões de Ação */}
-        <div className="flex items-center gap-2">
+        {/* Botões de Ação de Impressão (PDF A4, Cupom 40 Colunas, Whats) */}
+        <div className="grid grid-cols-3 gap-2">
           <button
-            onClick={() => handleShareWhatsApp('seletor')}
-            className="flex-1 py-3 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow-lg shadow-emerald-900/40 flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+            onClick={handlePrint}
+            className="py-3 px-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold shadow-lg shadow-indigo-900/40 flex items-center justify-center gap-1 active:scale-95 transition-all"
+            title="Imprimir Recibo de Quitação em Folha Inteira A4 (80 Colunas)"
           >
-            <MessageSquare className="w-4 h-4" />
-            Enviar no Whats
+            <Printer className="w-4 h-4" />
+            <span>PDF A4 (80 Col)</span>
           </button>
 
           <button
-            onClick={handlePrint}
-            className="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center gap-1.5 border border-slate-700"
+            onClick={handlePrintCupom}
+            className="py-3 px-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-extrabold shadow-lg shadow-purple-900/40 flex items-center justify-center gap-1 active:scale-95 transition-all"
+            title="Imprimir Recibo em Cupom Térmico (40 Colunas / 58-80mm)"
           >
             <Printer className="w-4 h-4" />
-            Imprimir Recibo PDF
+            <span>Cupom (40 Col)</span>
+          </button>
+
+          <button
+            onClick={() => handleShareWhatsApp('seletor')}
+            className="py-3 px-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow-lg shadow-emerald-900/40 flex items-center justify-center gap-1 active:scale-95 transition-all"
+          >
+            <MessageSquare className="w-4 h-4" />
+            <span>WhatsApp</span>
           </button>
         </div>
       </div>

@@ -42,6 +42,7 @@ import { ReciboModal } from './components/ReciboModal';
 import { ImportarClientesModal } from './components/ImportarClientesModal';
 import { RelatorioBaixadasPDFModal, TipoRelatorioPDF } from './components/RelatorioBaixadasPDFModal';
 import { ExcluirCobrancasModal } from './components/ExcluirCobrancasModal';
+import { ReciboAvulsoModal } from './components/ReciboAvulsoModal';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
@@ -71,6 +72,7 @@ export const App: React.FC = () => {
   const [cobrancasParaPDF, setCobrancasParaPDF] = useState<Cobranca[]>([]);
   const [subtituloPeriodoPDF, setSubtituloPeriodoPDF] = useState<string>('');
   const [cobrancaParaExcluir, setCobrancaParaExcluir] = useState<Cobranca | null>(null);
+  const [isReciboAvulsoOpen, setIsReciboAvulsoOpen] = useState(false);
 
   // Carrega dados iniciais do LocalStorage e sincroniza com o Neon Database
   useEffect(() => {
@@ -492,6 +494,7 @@ export const App: React.FC = () => {
               setSubtituloPeriodoPDF(subtitulo || '');
               setIsRelatorioPDFOpen(true);
             }}
+            onOpenReciboAvulso={() => setIsReciboAvulsoOpen(true)}
           />
         )}
 
@@ -613,6 +616,14 @@ export const App: React.FC = () => {
         cobranca={cobrancaParaExcluir}
         todasCobrancas={cobrancas}
         onConfirmarExclusao={handleConfirmarExclusaoMultipla}
+      />
+
+      <ReciboAvulsoModal
+        isOpen={isReciboAvulsoOpen}
+        onClose={() => setIsReciboAvulsoOpen(false)}
+        clientes={clientes}
+        nomeEmpresa={config.nomeEmpresa}
+        cnpjEmpresa={config.cnpjEmpresa}
       />
     </div>
   );
