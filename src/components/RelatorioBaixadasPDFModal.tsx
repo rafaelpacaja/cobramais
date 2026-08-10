@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Printer, FileText, CheckCircle2, PieChart, Clock, ShieldAlert } from 'lucide-react';
+import { X, Printer, FileText, CheckCircle2, PieChart, Clock, ShieldAlert, Users, List } from 'lucide-react';
 import { Cobranca, Cliente } from '../types';
 import { formatCurrency, formatDateBR } from '../utils/whatsapp';
 import { formatCNPJ } from '../services/storage';
@@ -23,7 +23,8 @@ export function gerarEImprimirRelatorioPDF(
   nomeEmpresa: string,
   cnpjEmpresa: string | undefined,
   tipo: TipoRelatorioPDF,
-  subtituloPeriodo?: string
+  subtituloPeriodo?: string,
+  agruparPorCliente: boolean = true
 ) {
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
@@ -91,11 +92,48 @@ export function gerarEImprimirRelatorioPDF(
   const colsCount = exibirForma ? 8 : 7;
   const footerColspan = exibirForma ? 7 : 6;
 
-  const rowsHtml = listaFiltrada.length === 0 
-    ? `<tr><td colspan="${colsCount}" style="padding: 15px; text-align: center; color: #64748b;">Nenhuma cobrança encontrada para este tipo de relatório.</td></tr>`
-    : listaFiltrada.map((item, idx) => {
-        const cli = clientes.find(c => c.id === item.clienteId || c.nome === item.clienteNome);
-        const doc = item.clienteDocumento || cli?.documento || '-';
+  let rowsHtml = '';
+
+  if (listaFiltrada.length === 0) {
+    rowsHtml = `<tr><td colspan="${colsCount}" style="padding: 15px; text-align: center; color: #64748b;">Nenhuma cobrança encontrada para este tipo de relatório.</td></tr>`;
+  } else if (agruparPorCliente) {
+    // Agrupamento por Cliente com Subtotais por Cliente (igual relatório bancário)
+    const grupos: Record<string, { clienteNome: string; documento: string; fone: string; itens: Cobranca[] }> = {};
+
+    listaFiltrada.forEach(item => {
+      const key = item.clienteNome.trim().toLowerCase();
+      const cli = clientes.find(c => c.id === item.clienteId || c.nome.toLowerCase() === key);
+      const doc = item.clienteDocumento || cli?.documento || '-';
+      const fone = item.clienteTelefone || cli?.telefone || '-';
+
+      if (!grupos[key]) {
+        grupos[key] = {
+          clienteNome: item.clienteNome.trim(),
+          documento: doc,
+          fone: fone,
+          itens: []
+        };
+      }
+      grupos[key].itens.push(item);
+    });
+
+    let globalCounter = 0;
+
+    rowsHtml = Object.values(grupos).map(grupo => {
+      // Ordena os títulos do cliente pela data de vencimento
+      grupo.itens.sort((a, b) => a.dataVencimento.localeCompare(b.dataVencimento));
+      const subtotalCliente = grupo.itens.reduce((sum, item) => sum + item.valor, 0);
+
+      const headerRow = `
+        <tr style="background: #e0e7ff; color: #3730a3; font-weight: 900; font-size: 10px; page-break-after: avoid; break-after: avoid;">
+          <td colspan="${colsCount}" style="padding: 6px 8px; border: 1px solid #c7d2fe; text-transform: uppercase; letter-spacing: 0.5px;">
+            👤 CLIENTE: <strong>${grupo.clienteNome}</strong> &nbsp;&bull;&nbsp; CPF/CNPJ: <strong>${grupo.documento}</strong> &nbsp;&bull;&nbsp; FONE: <strong>${grupo.fone}</strong>
+          </td>
+        </tr>
+      `;
+
+      const itemRows = grupo.itens.map((item, idx) => {
+        globalCounter++;
         const mesRefFinal = item.mesReferencia || (item.dataVencimento ? `${item.dataVencimento.split('-')[1]}/${item.dataVencimento.split('-')[0]}` : '-');
         
         let statusBadgeHtml = '';
@@ -114,9 +152,9 @@ export function gerarEImprimirRelatorioPDF(
 
         return `
           <tr style="background-color: ${rowBg}; font-size: 10px;">
-            <td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold; color: #64748b;">${idx + 1}</td>
+            <td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold; color: #64748b;">${globalCounter}</td>
             <td style="padding: 5px 6px; border: 1px solid #cbd5e1; font-weight: bold; color: #0f172a;">${item.clienteNome}</td>
-            <td style="padding: 5px 6px; border: 1px solid #cbd5e1; font-family: monospace; font-size: 9px; color: #475569;">${doc}</td>
+            <td style="padding: 5px 6px; border: 1px solid #cbd5e1; font-family: monospace; font-size: 9px; color: #475569;">${grupo.documento}</td>
             <td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: center; font-weight: 800; color: #4338ca; font-size: 10px;">${mesRefFinal}</td>
             <td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: center; color: #475569; font-weight: 600;">${formatDateBR(item.dataVencimento)}</td>
             <td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: center;">${statusBadgeHtml}</td>
@@ -125,6 +163,56 @@ export function gerarEImprimirRelatorioPDF(
           </tr>
         `;
       }).join('');
+
+      const subtotalRow = `
+        <tr style="background: #f1f5f9; font-weight: 800; font-size: 9.5px; page-break-before: avoid; break-before: avoid;">
+          <td colspan="${footerColspan}" style="padding: 6px 8px; border: 1px solid #cbd5e1; text-align: right; color: #334155; text-transform: uppercase;">
+            SUB-TOTAL: ${grupo.itens.length} TÍTULO(S) DE ${grupo.clienteNome}:
+          </td>
+          <td style="padding: 6px 8px; border: 1px solid #cbd5e1; text-align: right; font-weight: 900; color: ${tipo === 'atrasados' ? '#b91c1c' : '#047857'}; font-size: 11px;">
+            ${formatCurrency(subtotalCliente)}
+          </td>
+        </tr>
+      `;
+
+      return headerRow + itemRows + subtotalRow;
+    }).join('');
+
+  } else {
+    // Lista plana sequencial sem agrupamento
+    rowsHtml = listaFiltrada.map((item, idx) => {
+      const cli = clientes.find(c => c.id === item.clienteId || c.nome === item.clienteNome);
+      const doc = item.clienteDocumento || cli?.documento || '-';
+      const mesRefFinal = item.mesReferencia || (item.dataVencimento ? `${item.dataVencimento.split('-')[1]}/${item.dataVencimento.split('-')[0]}` : '-');
+      
+      let statusBadgeHtml = '';
+      let rowBg = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
+
+      if (item.status === 'pago') {
+        statusBadgeHtml = `<span style="background: #d1fae5; color: #047857; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 8.5px;">PAGO</span>`;
+      } else if (item.status === 'atrasado') {
+        statusBadgeHtml = `<span style="background: #fee2e2; color: #b91c1c; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 8.5px;">ATRASADO</span>`;
+        rowBg = '#fff1f2';
+      } else if (item.status === 'pendente') {
+        statusBadgeHtml = `<span style="background: #fef3c7; color: #b45309; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 8.5px;">PENDENTE</span>`;
+      } else {
+        statusBadgeHtml = `<span style="background: #f1f5f9; color: #64748b; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 8.5px;">CANCELADO</span>`;
+      }
+
+      return `
+        <tr style="background-color: ${rowBg}; font-size: 10px;">
+          <td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold; color: #64748b;">${idx + 1}</td>
+          <td style="padding: 5px 6px; border: 1px solid #cbd5e1; font-weight: bold; color: #0f172a;">${item.clienteNome}</td>
+          <td style="padding: 5px 6px; border: 1px solid #cbd5e1; font-family: monospace; font-size: 9px; color: #475569;">${doc}</td>
+          <td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: center; font-weight: 800; color: #4338ca; font-size: 10px;">${mesRefFinal}</td>
+          <td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: center; color: #475569; font-weight: 600;">${formatDateBR(item.dataVencimento)}</td>
+          <td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: center;">${statusBadgeHtml}</td>
+          ${exibirForma ? `<td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: center; text-transform: uppercase; font-weight: bold; font-size: 9px; color: #334155;">${item.formaPagamento}</td>` : ''}
+          <td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: right; font-weight: 800; color: ${item.status === 'atrasado' ? '#b91c1c' : item.status === 'pago' ? '#047857' : '#0f172a'};">${formatCurrency(item.valor)}</td>
+        </tr>
+      `;
+    }).join('');
+  }
 
   const totalFormatadoRodape = 
     tipo === 'quitadas' ? formatCurrency(totalQuitado) :
@@ -232,7 +320,7 @@ export function gerarEImprimirRelatorioPDF(
         </tbody>
         <tfoot>
           <tr style="background: #0f172a; color: #ffffff; font-weight: 900; font-size: 9.5px;">
-            <td colspan="${footerColspan}" style="padding: 7px 8px; text-align: right; text-transform: uppercase;">TOTAL DO RELATÓRIO:</td>
+            <td colspan="${footerColspan}" style="padding: 7px 8px; text-align: right; text-transform: uppercase;">TOTAL GERAL DO RELATÓRIO:</td>
             <td style="padding: 7px 8px; text-align: right; color: ${tipo === 'atrasados' ? '#f87171' : '#34d399'}; font-size: 11.5px;">${totalFormatadoRodape}</td>
           </tr>
         </tfoot>
@@ -275,6 +363,7 @@ export const RelatorioBaixadasPDFModal: React.FC<RelatorioPDFModalProps> = ({
   subtituloPeriodo
 }) => {
   const [tipo, setTipo] = useState<TipoRelatorioPDF>(tipoInicial);
+  const [agruparPorCliente, setAgruparPorCliente] = useState<boolean>(true);
 
   if (!isOpen) return null;
 
@@ -288,7 +377,7 @@ export const RelatorioBaixadasPDFModal: React.FC<RelatorioPDFModalProps> = ({
   const totalGeral = cobrancas.reduce((acc, c) => acc + c.valor, 0);
 
   const handleGerarPDF = () => {
-    gerarEImprimirRelatorioPDF(cobrancas, clientes, nomeEmpresa, cnpjEmpresa, tipo, subtituloPeriodo);
+    gerarEImprimirRelatorioPDF(cobrancas, clientes, nomeEmpresa, cnpjEmpresa, tipo, subtituloPeriodo, agruparPorCliente);
     onClose();
   };
 
@@ -376,6 +465,41 @@ export const RelatorioBaixadasPDFModal: React.FC<RelatorioPDFModalProps> = ({
             >
               <PieChart className="w-3.5 h-3.5" />
               <span>Geral</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Escolha do Modo de Organização (Agrupado por Cliente vs Lista) */}
+        <div className="space-y-1.5 text-left">
+          <label className="block text-xs font-bold text-slate-300">
+            Organização dos Títulos no PDF:
+          </label>
+
+          <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-950 border border-slate-800 rounded-2xl">
+            <button
+              type="button"
+              onClick={() => setAgruparPorCliente(true)}
+              className={`py-2 px-2 rounded-xl text-[11px] font-extrabold transition-all flex items-center justify-center gap-1.5 ${
+                agruparPorCliente
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-900/40'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Agrupar por Cliente</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setAgruparPorCliente(false)}
+              className={`py-2 px-2 rounded-xl text-[11px] font-extrabold transition-all flex items-center justify-center gap-1.5 ${
+                !agruparPorCliente
+                  ? 'bg-slate-800 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <List className="w-3.5 h-3.5" />
+              <span>Lista Sequencial</span>
             </button>
           </div>
         </div>
