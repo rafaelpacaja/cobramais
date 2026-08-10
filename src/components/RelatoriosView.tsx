@@ -60,9 +60,8 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
   const [dataInicio, setDataInicio] = useState<string>(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`);
   const [dataFim, setDataFim] = useState<string>(now.toISOString().split('T')[0]);
 
-  // Filtragem dinâmica de cobranças por período
   const cobrancasFiltradas = useMemo(() => {
-    return cobrancas.filter(c => {
+    const list = cobrancas.filter(c => {
       if (tipoFiltro === 'todos') return true;
 
       if (tipoFiltro === 'mes_atual') {
@@ -85,6 +84,10 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
 
       return true;
     });
+
+    return list.sort((a, b) => 
+      a.clienteNome.trim().localeCompare(b.clienteNome.trim(), 'pt-BR', { sensitivity: 'base' })
+    );
   }, [cobrancas, tipoFiltro, mesEspecificoSel, dataInicio, dataFim, currentMesRef, currentYearMonth]);
 
   // Recalcula indicadores para o período filtrado

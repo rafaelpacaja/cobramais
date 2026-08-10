@@ -60,34 +60,39 @@ export function gerarEImprimirRelatorioPDF(
   const exibirForma = tipo === 'quitadas' || tipo === 'completo';
 
   if (tipo === 'quitadas') {
-    listaFiltrada = quitadas;
+    listaFiltrada = [...quitadas];
     tituloRelatorio = 'RELATÓRIO FINANCEIRO DE CONTAS QUITADAS';
     subTituloRelatorio = 'Demonstrativo Analítico de Títulos Liquidados e Recebidos';
     badgeHeader = '✔ QUITADAS / BAIXADAS';
     badgeHeaderBg = '#d1fae5';
     badgeHeaderColor = '#047857';
   } else if (tipo === 'em_aberto') {
-    listaFiltrada = pendentes.sort((a, b) => a.dataVencimento.localeCompare(b.dataVencimento));
+    listaFiltrada = [...pendentes];
     tituloRelatorio = 'RELATÓRIO DE CONTAS A VENCER (PENDENTES)';
     subTituloRelatorio = 'Demonstrativo Analítico de Títulos Pendentes A Vencer';
     badgeHeader = '⏳ A VENCER (PENDENTES)';
     badgeHeaderBg = '#fef3c7';
     badgeHeaderColor = '#b45309';
   } else if (tipo === 'atrasados') {
-    listaFiltrada = atrasados.sort((a, b) => a.dataVencimento.localeCompare(b.dataVencimento));
+    listaFiltrada = [...atrasados];
     tituloRelatorio = 'RELATÓRIO DE CONTAS VENCIDAS EM ATRASO';
     subTituloRelatorio = 'Demonstrativo Analítico de Títulos Vencidos e Inadimplentes';
     badgeHeader = '🚨 VENCIDAS EM ATRASO';
     badgeHeaderBg = '#fee2e2';
     badgeHeaderColor = '#b91c1c';
   } else {
-    listaFiltrada = cobrancas;
+    listaFiltrada = [...cobrancas];
     tituloRelatorio = 'RELATÓRIO CONSOLIDADO GERAL DA CARTEIRA';
     subTituloRelatorio = 'Balanço Geral Sintético e Analítico de Todos os Títulos';
     badgeHeader = '📊 CARTEIRA COMPLETA';
     badgeHeaderBg = '#e0e7ff';
     badgeHeaderColor = '#4338ca';
   }
+
+  // Ordenação Estrita em Ordem Alfabética (A a Z) por Nome de Cliente
+  listaFiltrada.sort((a, b) => 
+    a.clienteNome.trim().localeCompare(b.clienteNome.trim(), 'pt-BR', { sensitivity: 'base' })
+  );
 
   const colsCount = exibirForma ? 8 : 7;
   const footerColspan = exibirForma ? 7 : 6;
@@ -97,7 +102,7 @@ export function gerarEImprimirRelatorioPDF(
   if (listaFiltrada.length === 0) {
     rowsHtml = `<tr><td colspan="${colsCount}" style="padding: 15px; text-align: center; color: #64748b;">Nenhuma cobrança encontrada para este tipo de relatório.</td></tr>`;
   } else if (agruparPorCliente) {
-    // Agrupamento por Cliente com Subtotais por Cliente (igual relatório bancário)
+    // Agrupamento por Cliente com Subtotais e em Ordem Alfabética (A-Z)
     const grupos: Record<string, { clienteNome: string; documento: string; fone: string; itens: Cobranca[] }> = {};
 
     listaFiltrada.forEach(item => {
@@ -117,10 +122,15 @@ export function gerarEImprimirRelatorioPDF(
       grupos[key].itens.push(item);
     });
 
+    // Ordena os grupos em Ordem Alfabética (A a Z)
+    const gruposOrdenados = Object.values(grupos).sort((a, b) => 
+      a.clienteNome.trim().localeCompare(b.clienteNome.trim(), 'pt-BR', { sensitivity: 'base' })
+    );
+
     let globalCounter = 0;
 
-    rowsHtml = Object.values(grupos).map(grupo => {
-      // Ordena os títulos do cliente pela data de vencimento
+    rowsHtml = gruposOrdenados.map(grupo => {
+      // Ordena os títulos do cliente por vencimento
       grupo.itens.sort((a, b) => a.dataVencimento.localeCompare(b.dataVencimento));
       const subtotalCliente = grupo.itens.reduce((sum, item) => sum + item.valor, 0);
 
@@ -179,7 +189,7 @@ export function gerarEImprimirRelatorioPDF(
     }).join('');
 
   } else {
-    // Lista plana sequencial sem agrupamento
+    // Lista plana sequencial em Ordem Alfabética (A-Z)
     rowsHtml = listaFiltrada.map((item, idx) => {
       const cli = clientes.find(c => c.id === item.clienteId || c.nome === item.clienteNome);
       const doc = item.clienteDocumento || cli?.documento || '-';
@@ -298,7 +308,7 @@ export function gerarEImprimirRelatorioPDF(
         <div style="text-align: right; font-size: 10px;">
           <p style="margin: 0 0 2px 0;"><strong>Emissão:</strong> ${dataEmissao}</p>
           <p style="margin: 0 0 3px 0; font-family: monospace; font-size: 9px; color: #64748b;">Autenticação: ${reportHash}</p>
-          <span style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold;">✔ Auditado</span>
+          <span style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold;">✔ Auditado (Ordem Alfabética)</span>
         </div>
       </div>
 
@@ -486,7 +496,7 @@ export const RelatorioBaixadasPDFModal: React.FC<RelatorioPDFModalProps> = ({
               }`}
             >
               <Users className="w-3.5 h-3.5" />
-              <span>Agrupar por Cliente</span>
+              <span>Agrupar por Cliente (A-Z)</span>
             </button>
 
             <button
@@ -499,7 +509,7 @@ export const RelatorioBaixadasPDFModal: React.FC<RelatorioPDFModalProps> = ({
               }`}
             >
               <List className="w-3.5 h-3.5" />
-              <span>Lista Sequencial</span>
+              <span>Lista Sequencial (A-Z)</span>
             </button>
           </div>
         </div>
