@@ -72,6 +72,10 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (usuarioLogado?.role === 'visualizador') {
+      alert('🔒 Acesso Negado\n\nSeu perfil de usuário (Somente Leitura) não possui permissão para alterar as configurações da empresa. Apenas administradores podem modificar estes dados.');
+      return;
+    }
     onSalvarConfig({
       nomeEmpresa: nomeEmpresa.trim(),
       cnpjEmpresa: cnpjEmpresa.trim(),
@@ -317,6 +321,10 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
 
           <button
             onClick={() => {
+              if (usuarioLogado?.role === 'visualizador') {
+                alert('🔒 Acesso Negado\n\nSeu perfil de usuário (Somente Leitura) não possui permissão para cadastrar novos usuários da equipe. Apenas administradores podem gerenciar acessos do sistema.');
+                return;
+              }
               setUserErrorMsg('');
               setUserSuccessMsg('');
               setIsNovoUsuarioModalOpen(true);
