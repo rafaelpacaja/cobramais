@@ -15,6 +15,7 @@ import {
   logoutUsuario,
   deleteCobrancaFromNeon,
   deleteClienteFromNeon,
+  getTodayString,
   AppConfig 
 } from './services/storage';
 import { Cliente, Cobranca, FormaPagamento, TabType, Usuario } from './types';
@@ -357,11 +358,15 @@ export const App: React.FC = () => {
     const confirmMsg = `Tem certeza que deseja ESTORNAR A BAIXA do título de ${cob.clienteNome}?\n\n(Valor: ${formatCurrency(cob.valor)} - Mês Ref: ${mesRefStr})\n\nO título voltará ao status em aberto (pendente/atrasado) e a data de pagamento será cancelada.`;
 
     if (confirm(confirmMsg)) {
+      const currentDate = getTodayString();
       const updated = cobrancas.map(item => {
         if (item.id === cobrancaId) {
-          const { dataPagamento, ...rest } = item;
+          const venc = item.dataVencimento || currentDate;
+          const novoStatus = venc <= currentDate ? ('atrasado' as const) : ('pendente' as const);
+
           return {
-            ...rest,
+            ...item,
+            status: novoStatus,
             dataPagamento: undefined
           };
         }
@@ -371,6 +376,7 @@ export const App: React.FC = () => {
       const updatedWithOverdue = updateOverdueStatuses(updated);
       setCobrancas(updatedWithOverdue);
       saveCobrancas(updatedWithOverdue);
+      alert(`Sucesso! A baixa do título de ${cob.clienteNome} (R$ ${formatCurrency(cob.valor)}) foi estornada com sucesso.`);
     }
   };
 
