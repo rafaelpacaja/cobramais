@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   Settings, 
   Save, 
@@ -138,6 +138,16 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
         setUserSuccessMsg('');
       }, 1500);
     }
+  };
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleClickRestaurar = () => {
+    if (usuarioLogado?.role === 'visualizador') {
+      alert('🔒 Acesso Negado\n\nSeu perfil de usuário (Somente Leitura) não possui permissão para restaurar backups. Apenas administradores podem realizar restaurações do sistema.');
+      return;
+    }
+    fileInputRef.current?.click();
   };
 
   const handleExportBackup = () => {
@@ -398,16 +408,22 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
             Exportar JSON
           </button>
 
-          <label className="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer active:scale-95 transition-all">
+          <button
+            type="button"
+            onClick={handleClickRestaurar}
+            className="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer active:scale-95 transition-all"
+          >
             <Upload className="w-4 h-4 text-emerald-400" />
             <span>Restaurar</span>
-            <input
-              type="file"
-              accept=".json"
-              onChange={handleImportBackup}
-              className="hidden"
-            />
-          </label>
+          </button>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            onChange={handleImportBackup}
+            className="hidden"
+          />
         </div>
       </div>
 
