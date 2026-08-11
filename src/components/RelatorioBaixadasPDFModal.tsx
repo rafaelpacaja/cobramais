@@ -320,12 +320,12 @@ export function gerarEImprimirRelatorioPDF(
           <tr>
             <th style="text-align: center; width: 22px;">#</th>
             <th style="text-align: left;">CLIENTE / DEVEDOR</th>
-            <th style="text-align: left; width: 135px;">CPF / CNPJ</th>
-            <th style="text-align: center; width: 70px;">MÊS REF.</th>
-            <th style="text-align: center; width: 80px;">VENCIMENTO</th>
-            <th style="text-align: center; width: 68px;">STATUS</th>
-            ${exibirForma ? `<th style="text-align: center; width: 60px;">FORMA</th>` : ''}
-            <th style="text-align: right; width: 100px;">VALOR DA COBRANÇA</th>
+            <th style="text-align: left; width: 110px;">CPF / CNPJ</th>
+            <th style="text-align: center; width: 68px;">MÊS REF.</th>
+            <th style="text-align: center; width: 75px;">VENCIMENTO</th>
+            <th style="text-align: center; width: 64px;">STATUS</th>
+            ${exibirForma ? `<th style="text-align: center; width: 55px;">FORMA</th>` : ''}
+            <th style="text-align: right; width: 95px;">VALOR DA COBRANÇA</th>
           </tr>
         </thead>
         <tbody>
@@ -344,8 +344,9 @@ export function gerarEImprimirRelatorioPDF(
           <strong style="font-size: 9px; text-transform: uppercase; color: #334155; display: block; margin-bottom: 2px;">Termo de Responsabilidade Financeira</strong>
           <p style="font-size: 8px; color: #64748b; margin: 0; line-height: 1.3;">Declaro que as informações constantes neste relatório representam a totalidade dos dados registrados no sistema até a presente data.</p>
         </div>
-        <div style="text-align: center; width: 220px;">
-          <div style="border-bottom: 1px solid #0f172a; margin-bottom: 3px;"></div>
+        <div style="text-align: center; width: 230px;">
+          <div style="height: 45px;"></div>
+          <div style="border-bottom: 1.5px solid #0f172a; margin-bottom: 4px;"></div>
           <strong style="font-size: 9.5px; color: #0f172a; display: block;">${nomeEmpresa || 'COMPUSERVE LTDA'}</strong>
           <span style="font-size: 8.5px; font-weight: 700; color: #4338ca; display: block;">CNPJ: ${cnpjExibicao}</span>
           <span style="font-size: 8px; color: #64748b;">Gestor Financeiro / Responsável</span>
