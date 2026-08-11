@@ -32,8 +32,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 }) => {
   const cobrancasUrgentes = cobrancas
     .filter(c => c.status === 'atrasado' || c.status === 'pendente')
-    .sort((a, b) => a.dataVencimento.localeCompare(b.dataVencimento))
-    .slice(0, 5);
+    .sort((a, b) => a.clienteNome.localeCompare(b.clienteNome, 'pt-BR', { sensitivity: 'base' }));
 
   return (
     <div className="w-full min-h-[101vh] space-y-5 px-4 pt-3 pb-24 animate-fade-in">
