@@ -18,6 +18,7 @@ interface DashboardProps {
   onOpenWhatsAppModal: (cobranca: Cobranca) => void;
   onVerTodasCobrancas: () => void;
   onSelectCobranca: (cobranca: Cobranca) => void;
+  isReadOnly?: boolean;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -26,7 +27,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onOpenNovaCobranca,
   onOpenWhatsAppModal,
   onVerTodasCobrancas,
-  onSelectCobranca
+  onSelectCobranca,
+  isReadOnly = false
 }) => {
   const cobrancasUrgentes = cobrancas
     .filter(c => c.status === 'atrasado' || c.status === 'pendente')
@@ -49,13 +51,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </p>
 
           <div className="mt-4 flex items-center gap-2">
-            <button
-              onClick={onOpenNovaCobranca}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-indigo-900 font-bold text-xs shadow-lg shadow-black/20 hover:bg-slate-100 transition-all active:scale-95"
-            >
-              <Plus className="w-4 h-4 stroke-[3]" />
-              Nova Cobrança
-            </button>
+            {!isReadOnly && (
+              <button
+                onClick={onOpenNovaCobranca}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-indigo-900 font-bold text-xs shadow-lg shadow-black/20 hover:bg-slate-100 transition-all active:scale-95"
+              >
+                <Plus className="w-4 h-4 stroke-[3]" />
+                Nova Cobrança
+              </button>
+            )}
             
             <button
               onClick={onVerTodasCobrancas}

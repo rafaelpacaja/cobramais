@@ -58,6 +58,7 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
   const [newCnpj, setNewCnpj] = useState(config.cnpjEmpresa || '60.060.102/0001-24');
   const [newTelefone, setNewTelefone] = useState('');
   const [newSenha, setNewSenha] = useState('');
+  const [newRole, setNewRole] = useState<'admin' | 'visualizador'>('visualizador');
   const [userSuccessMsg, setUserSuccessMsg] = useState('');
   const [userErrorMsg, setUserErrorMsg] = useState('');
   const [userLoading, setUserLoading] = useState(false);
@@ -102,7 +103,8 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
           empresa: newEmpresa || nomeEmpresa,
           cnpj: newCnpj || cnpjEmpresa,
           telefone: newTelefone,
-          senha: newSenha
+          senha: newSenha,
+          role: newRole
         })
       });
 
@@ -532,6 +534,48 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
                       className="w-full bg-slate-950 border border-slate-800 rounded-r-xl px-2.5 py-2 text-slate-100 font-bold focus:border-emerald-500 text-xs"
                     />
                   </div>
+                </div>
+              </div>
+
+              {/* Perfil de Acesso (Permissões) */}
+              <div>
+                <label className="block text-slate-300 font-bold mb-1.5 flex items-center justify-between">
+                  <span>Perfil de Acesso (Permissão):</span>
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setNewRole('visualizador')}
+                    className={`p-2.5 rounded-xl border text-left flex flex-col gap-0.5 transition-all cursor-pointer ${
+                      newRole === 'visualizador'
+                        ? 'bg-indigo-950/70 border-indigo-500 text-indigo-200 shadow-md ring-1 ring-indigo-500'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <span className="font-extrabold text-xs flex items-center gap-1">
+                      👁️ Somente Leitura
+                    </span>
+                    <span className="text-[10px] text-slate-400 leading-tight">
+                      Apenas visualiza dados e relatórios. Não altera ou exclui nada.
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setNewRole('admin')}
+                    className={`p-2.5 rounded-xl border text-left flex flex-col gap-0.5 transition-all cursor-pointer ${
+                      newRole === 'admin'
+                        ? 'bg-emerald-950/70 border-emerald-500 text-emerald-200 shadow-md ring-1 ring-emerald-500'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <span className="font-extrabold text-xs flex items-center gap-1">
+                      👑 Administrador
+                    </span>
+                    <span className="text-[10px] text-slate-400 leading-tight">
+                      Acesso total para criar, editar, dar baixa e excluir.
+                    </span>
+                  </button>
                 </div>
               </div>
 

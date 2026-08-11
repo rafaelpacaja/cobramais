@@ -472,6 +472,7 @@ export const App: React.FC = () => {
             onOpenWhatsAppModal={(cob) => setWhatsAppCobranca(cob)}
             onVerTodasCobrancas={() => setActiveTab('cobrancas')}
             onSelectCobranca={(cob) => setCobrancaParaEditar(cob)}
+            isReadOnly={usuario?.role === 'visualizador'}
           />
         )}
 
@@ -492,6 +493,7 @@ export const App: React.FC = () => {
             onDeletarCobranca={handleDeletarCobranca}
             onEstornarCobranca={handleEstornarCobranca}
             onLimparDuplicadas={handleLimparDuplicadas}
+            isReadOnly={usuario?.role === 'visualizador'}
           />
         )}
 
@@ -507,6 +509,7 @@ export const App: React.FC = () => {
               setClientePreSelecionado(cliente);
               setIsNovaCobrancaOpen(true);
             }}
+            isReadOnly={usuario?.role === 'visualizador'}
           />
         )}
 

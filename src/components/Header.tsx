@@ -44,8 +44,17 @@ export const Header: React.FC<HeaderProps> = ({
                 ANDROID PWA
               </span>
             </h1>
-            <p className="text-xs text-slate-400 font-medium mt-0.5 truncate max-w-[180px]">
-              {usuario?.empresa || nomeEmpresa}
+            <p className="text-xs text-slate-400 font-medium mt-0.5 truncate max-w-[180px] flex items-center gap-1.5">
+              <span>{usuario?.empresa || nomeEmpresa}</span>
+              {usuario?.role === 'visualizador' ? (
+                <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  👁️ Leitura
+                </span>
+              ) : usuario ? (
+                <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  👑 Admin
+                </span>
+              ) : null}
             </p>
           </div>
         </div>

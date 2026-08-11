@@ -2,10 +2,13 @@ export type StatusCobranca = 'pendente' | 'pago' | 'atrasado' | 'cancelado';
 
 export type FormaPagamento = 'pix' | 'boleto' | 'cartao' | 'dinheiro';
 
+export type UserRole = 'admin' | 'visualizador';
+
 export interface Usuario {
   id: string;
   nome: string;
   email: string;
+  role?: UserRole;
   empresa?: string;
   cnpj?: string;
   telefone?: string;

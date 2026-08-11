@@ -43,9 +43,16 @@ export default async function handler(req: any, res: any) {
         empresa TEXT,
         cnpj TEXT,
         telefone TEXT,
+        role TEXT DEFAULT 'admin',
         created_at TEXT
       );
     `;
+
+    try {
+      await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'admin';`;
+    } catch (e) {
+      // Coluna ja existente
+    }
 
     await sql`
       CREATE TABLE IF NOT EXISTS app_config (
@@ -204,16 +211,18 @@ export default async function handler(req: any, res: any) {
 
         const newId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
         const nowIso = new Date().toISOString();
+        const userRole = body.role === 'admin' ? 'admin' : (body.role || 'visualizador');
 
         await sql`
-          INSERT INTO usuarios (id, nome, email, senha, empresa, cnpj, telefone, created_at)
-          VALUES (${newId}, ${nome.trim()}, ${email.trim().toLowerCase()}, ${senha}, ${empresa || 'COMPUSERVE LTDA'}, ${cnpj || '60.060.102/0001-24'}, ${telefone || ''}, ${nowIso});
+          INSERT INTO usuarios (id, nome, email, senha, empresa, cnpj, telefone, role, created_at)
+          VALUES (${newId}, ${nome.trim()}, ${email.trim().toLowerCase()}, ${senha}, ${empresa || 'COMPUSERVE LTDA'}, ${cnpj || '60.060.102/0001-24'}, ${telefone || ''}, ${userRole}, ${nowIso});
         `;
 
         const usuario = {
           id: newId,
           nome: nome.trim(),
           email: email.trim().toLowerCase(),
+          role: userRole,
           empresa: empresa || 'COMPUSERVE LTDA',
           cnpj: cnpj || '60.060.102/0001-24',
           telefone: telefone || '',
@@ -230,7 +239,7 @@ export default async function handler(req: any, res: any) {
         }
 
         const userRows = await sql`
-          SELECT id, nome, email, empresa, cnpj, telefone, created_at
+          SELECT id, nome, email, empresa, cnpj, telefone, role, created_at
           FROM usuarios
           WHERE LOWER(email) = LOWER(${email.trim()}) AND senha = ${senha}
           LIMIT 1;
@@ -245,6 +254,7 @@ export default async function handler(req: any, res: any) {
           id: u.id,
           nome: u.nome,
           email: u.email,
+          role: u.role || 'admin',
           empresa: u.empresa || 'COMPUSERVE LTDA',
           cnpj: u.cnpj || '60.060.102/0001-24',
           telefone: u.telefone || '',

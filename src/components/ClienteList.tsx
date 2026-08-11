@@ -21,6 +21,7 @@ interface ClienteListProps {
   onOpenEditarCliente: (cliente: Cliente) => void;
   onDeletarCliente: (clienteId: string) => void;
   onNovaCobrancaParaCliente: (cliente: Cliente) => void;
+  isReadOnly?: boolean;
 }
 
 export const ClienteList: React.FC<ClienteListProps> = ({
@@ -30,7 +31,8 @@ export const ClienteList: React.FC<ClienteListProps> = ({
   onOpenImportarExcel,
   onOpenEditarCliente,
   onDeletarCliente,
-  onNovaCobrancaParaCliente
+  onNovaCobrancaParaCliente,
+  isReadOnly = false
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -75,22 +77,30 @@ export const ClienteList: React.FC<ClienteListProps> = ({
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
-          <button
-            onClick={onOpenImportarExcel}
-            className="h-9 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-slate-800 font-extrabold text-xs transition-all shadow-sm flex items-center gap-1.5 whitespace-nowrap active:scale-95"
-            title="Importar lista do Excel (.csv)"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5 shrink-0" />
-            <span>Excel</span>
-          </button>
+          {!isReadOnly ? (
+            <>
+              <button
+                onClick={onOpenImportarExcel}
+                className="h-9 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-slate-800 font-extrabold text-xs transition-all shadow-sm flex items-center gap-1.5 whitespace-nowrap active:scale-95"
+                title="Importar lista do Excel (.csv)"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 shrink-0" />
+                <span>Excel</span>
+              </button>
 
-          <button
-            onClick={onOpenNovoCliente}
-            className="h-9 px-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-1.5 whitespace-nowrap active:scale-95"
-          >
-            <UserPlus className="w-3.5 h-3.5 shrink-0" />
-            <span>Novo</span>
-          </button>
+              <button
+                onClick={onOpenNovoCliente}
+                className="h-9 px-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-1.5 whitespace-nowrap active:scale-95"
+              >
+                <UserPlus className="w-3.5 h-3.5 shrink-0" />
+                <span>Novo</span>
+              </button>
+            </>
+          ) : (
+            <span className="px-3 py-1.5 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-extrabold flex items-center gap-1">
+              👁️ Somente Leitura
+            </span>
+          )}
         </div>
       </div>
 
@@ -163,23 +173,25 @@ export const ClienteList: React.FC<ClienteListProps> = ({
                   </div>
 
                   {/* Ações de Edição e Exclusão */}
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      onClick={() => onOpenEditarCliente(cliente)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-300 hover:bg-slate-800 transition-colors"
-                      title="Editar dados do cliente"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </button>
+                  {!isReadOnly && (
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={() => onOpenEditarCliente(cliente)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-300 hover:bg-slate-800 transition-colors"
+                        title="Editar dados do cliente"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
 
-                    <button
-                      onClick={() => onDeletarCliente(cliente.id)}
-                      className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-slate-800 transition-colors"
-                      title="Excluir cliente"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                      <button
+                        onClick={() => onDeletarCliente(cliente.id)}
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-slate-800 transition-colors"
+                        title="Excluir cliente"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Resumo Financeiro do Cliente */}
@@ -211,12 +223,14 @@ export const ClienteList: React.FC<ClienteListProps> = ({
                     <span>Conversar</span>
                   </button>
 
-                  <button
-                    onClick={() => onNovaCobrancaParaCliente(cliente)}
-                    className="flex-1 py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-1 shadow-md shadow-indigo-600/30 transition-all active:scale-95"
-                  >
-                    + Cobrança
-                  </button>
+                  {!isReadOnly && (
+                    <button
+                      onClick={() => onNovaCobrancaParaCliente(cliente)}
+                      className="flex-1 py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-1 shadow-md shadow-indigo-600/30 transition-all active:scale-95"
+                    >
+                      + Cobrança
+                    </button>
+                  )}
                 </div>
               </div>
             );

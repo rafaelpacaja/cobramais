@@ -32,6 +32,7 @@ interface CobrancaListProps {
   onDeletarCobranca: (cobrancaId: string) => void;
   onEstornarCobranca?: (cobrancaId: string) => void;
   onLimparDuplicadas?: () => void;
+  isReadOnly?: boolean;
 }
 
 export const CobrancaList: React.FC<CobrancaListProps> = ({
@@ -46,7 +47,8 @@ export const CobrancaList: React.FC<CobrancaListProps> = ({
   onMarcarComoCancelado,
   onDeletarCobranca,
   onEstornarCobranca,
-  onLimparDuplicadas
+  onLimparDuplicadas,
+  isReadOnly = false
 }) => {
   const [filterStatus, setFilterStatus] = useState<string>('em_aberto');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -100,35 +102,43 @@ export const CobrancaList: React.FC<CobrancaListProps> = ({
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
-          {onOpenGerarMensalidades && (
-            <button
-              onClick={onOpenGerarMensalidades}
-              className="h-9 px-3 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 font-extrabold text-xs border border-indigo-500/30 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap active:scale-95"
-              title="Gerar mensalidades em lote para todos os clientes"
-            >
-              <Repeat className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-              <span>Gerar Lote</span>
-            </button>
-          )}
+          {!isReadOnly ? (
+            <>
+              {onOpenGerarMensalidades && (
+                <button
+                  onClick={onOpenGerarMensalidades}
+                  className="h-9 px-3 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 font-extrabold text-xs border border-indigo-500/30 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap active:scale-95"
+                  title="Gerar mensalidades em lote para todos os clientes"
+                >
+                  <Repeat className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                  <span>Gerar Lote</span>
+                </button>
+              )}
 
-          {onLimparDuplicadas && (
-            <button
-              onClick={onLimparDuplicadas}
-              className="h-9 px-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-extrabold text-xs border border-amber-500/30 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap active:scale-95"
-              title="Remover títulos duplicados"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span>Limpar</span>
-            </button>
-          )}
+              {onLimparDuplicadas && (
+                <button
+                  onClick={onLimparDuplicadas}
+                  className="h-9 px-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-extrabold text-xs border border-amber-500/30 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap active:scale-95"
+                  title="Remover títulos duplicados"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span>Limpar</span>
+                </button>
+              )}
 
-          <button
-            onClick={onOpenNovaCobranca}
-            className="h-9 px-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap active:scale-95"
-          >
-            <Plus className="w-3.5 h-3.5 stroke-[3] shrink-0" />
-            <span>Nova</span>
-          </button>
+              <button
+                onClick={onOpenNovaCobranca}
+                className="h-9 px-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap active:scale-95"
+              >
+                <Plus className="w-3.5 h-3.5 stroke-[3] shrink-0" />
+                <span>Nova</span>
+              </button>
+            </>
+          ) : (
+            <span className="px-3 py-1.5 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-extrabold flex items-center gap-1">
+              👁️ Somente Leitura
+            </span>
+          )}
         </div>
       </div>
 
