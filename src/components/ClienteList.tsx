@@ -36,11 +36,13 @@ export const ClienteList: React.FC<ClienteListProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
-  const clientesFiltrados = clientes.filter(c => 
-    c.nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.telefone.includes(searchQuery) ||
-    (c.documento && c.documento.includes(searchQuery))
-  );
+  const clientesFiltrados = clientes
+    .filter(c => 
+      c.nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.telefone.includes(searchQuery) ||
+      (c.documento && c.documento.includes(searchQuery))
+    )
+    .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' }));
 
   const getEstatisticasCliente = (clienteId: string) => {
     const cobrancasCliente = cobrancas.filter(c => c.clienteId === clienteId);

@@ -54,22 +54,24 @@ export const CobrancaList: React.FC<CobrancaListProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('todas');
 
-  const cobrancasFiltradas = cobrancas.filter((cob) => {
-    const matchSearch = 
-      cob.clienteNome.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      cob.descricao.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (cob.mesReferencia && cob.mesReferencia.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      cob.valor.toString().includes(searchQuery);
+  const cobrancasFiltradas = cobrancas
+    .filter((cob) => {
+      const matchSearch = 
+        cob.clienteNome.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        cob.descricao.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (cob.mesReferencia && cob.mesReferencia.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        cob.valor.toString().includes(searchQuery);
 
-    const matchStatus = 
-      filterStatus === 'todos' ? true :
-      filterStatus === 'em_aberto' ? (cob.status === 'pendente' || cob.status === 'atrasado') :
-      cob.status === filterStatus;
+      const matchStatus = 
+        filterStatus === 'todos' ? true :
+        filterStatus === 'em_aberto' ? (cob.status === 'pendente' || cob.status === 'atrasado') :
+        cob.status === filterStatus;
 
-    const matchCategoria = selectedCategory === 'todas' || cob.categoria === selectedCategory;
+      const matchCategoria = selectedCategory === 'todas' || cob.categoria === selectedCategory;
 
-    return matchSearch && matchStatus && matchCategoria;
-  });
+      return matchSearch && matchStatus && matchCategoria;
+    })
+    .sort((a, b) => a.clienteNome.localeCompare(b.clienteNome, 'pt-BR', { sensitivity: 'base' }));
 
   const getFormaPagamentoIcon = (forma: string) => {
     switch (forma) {
