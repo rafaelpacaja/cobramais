@@ -344,6 +344,31 @@ export const App: React.FC = () => {
     saveCobrancas(updated);
   };
 
+  const handleEstornarCobranca = (cobrancaId: string) => {
+    const cob = cobrancas.find(c => c.id === cobrancaId);
+    if (!cob) return;
+
+    const mesRefStr = cob.mesReferencia || (cob.dataVencimento ? `${cob.dataVencimento.split('-')[1]}/${cob.dataVencimento.split('-')[0]}` : '');
+    const confirmMsg = `Tem certeza que deseja ESTORNAR A BAIXA do título de ${cob.clienteNome}?\n\n(Valor: ${formatCurrency(cob.valor)} - Mês Ref: ${mesRefStr})\n\nO título voltará ao status em aberto (pendente/atrasado) e a data de pagamento será cancelada.`;
+
+    if (confirm(confirmMsg)) {
+      const updated = cobrancas.map(item => {
+        if (item.id === cobrancaId) {
+          const { dataPagamento, ...rest } = item;
+          return {
+            ...rest,
+            dataPagamento: undefined
+          };
+        }
+        return item;
+      });
+
+      const updatedWithOverdue = updateOverdueStatuses(updated);
+      setCobrancas(updatedWithOverdue);
+      saveCobrancas(updatedWithOverdue);
+    }
+  };
+
   const handleDeletarCobranca = (cobrancaId: string) => {
     const cob = cobrancas.find(c => c.id === cobrancaId);
     if (cob) {
@@ -465,6 +490,7 @@ export const App: React.FC = () => {
             onMarcarComoPago={handleMarcarComoPago}
             onMarcarComoCancelado={handleMarcarComoCancelado}
             onDeletarCobranca={handleDeletarCobranca}
+            onEstornarCobranca={handleEstornarCobranca}
             onLimparDuplicadas={handleLimparDuplicadas}
           />
         )}

@@ -13,7 +13,8 @@ import {
   DollarSign,
   Pencil,
   Sparkles,
-  Repeat
+  Repeat,
+  RotateCcw
 } from 'lucide-react';
 import { Cobranca, StatusCobranca } from '../types';
 import { formatCurrency, formatDateBR } from '../utils/whatsapp';
@@ -29,6 +30,7 @@ interface CobrancaListProps {
   onMarcarComoPago: (cobrancaId: string) => void;
   onMarcarComoCancelado: (cobrancaId: string) => void;
   onDeletarCobranca: (cobrancaId: string) => void;
+  onEstornarCobranca?: (cobrancaId: string) => void;
   onLimparDuplicadas?: () => void;
 }
 
@@ -43,6 +45,7 @@ export const CobrancaList: React.FC<CobrancaListProps> = ({
   onMarcarComoPago,
   onMarcarComoCancelado,
   onDeletarCobranca,
+  onEstornarCobranca,
   onLimparDuplicadas
 }) => {
   const [filterStatus, setFilterStatus] = useState<string>('em_aberto');
@@ -318,13 +321,27 @@ export const CobrancaList: React.FC<CobrancaListProps> = ({
                       <span>Dar Baixa</span>
                     </button>
                   ) : (
-                    <button
-                      onClick={() => onOpenReciboModal(cob)}
-                      className="flex-1 flex items-center justify-center gap-1 py-2 px-2.5 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 font-bold text-xs border border-indigo-500/30 transition-all"
-                    >
-                      <FileCheck className="w-3.5 h-3.5 shrink-0" />
-                      <span>Recibo</span>
-                    </button>
+                    <>
+                      <button
+                        onClick={() => onOpenReciboModal(cob)}
+                        className="flex-1 flex items-center justify-center gap-1 py-2 px-2 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 font-bold text-xs border border-indigo-500/30 transition-all active:scale-95 whitespace-nowrap"
+                        title="Ver / Imprimir Recibo de Quitação"
+                      >
+                        <FileCheck className="w-3.5 h-3.5 shrink-0" />
+                        <span>Recibo</span>
+                      </button>
+
+                      {onEstornarCobranca && (
+                        <button
+                          onClick={() => onEstornarCobranca(cob.id)}
+                          className="flex-1 flex items-center justify-center gap-1 py-2 px-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold text-xs border border-amber-500/30 transition-all active:scale-95 whitespace-nowrap"
+                          title="Estornar quitação e reabrir cobrança"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+                          <span>Estornar</span>
+                        </button>
+                      )}
+                    </>
                   )}
 
                   {/* Botão Editar */}
