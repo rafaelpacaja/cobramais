@@ -211,6 +211,10 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
   };
 
   const handleAbrirModalReset = () => {
+    if (usuarioLogado?.role === 'visualizador') {
+      alert('🔒 Acesso Negado\n\nSeu perfil de usuário (Somente Leitura) não possui permissão para restaurar dados demonstrativos iniciais. Apenas administradores podem executar esta ação.');
+      return;
+    }
     setSenhaInput('');
     setErroSenha('');
     setIsResetModalOpen(true);
