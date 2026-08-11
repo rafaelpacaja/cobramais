@@ -345,13 +345,11 @@ export function gerarEImprimirRelatorioPDF(
           <p style="font-size: 8px; color: #64748b; margin: 0; line-height: 1.3;">Declaro que as informações constantes neste relatório representam a totalidade dos dados registrados no sistema até a presente data.</p>
         </div>
         <div style="text-align: center; width: 240px;">
-          <div style="height: 55px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 4px;">
-            <span style="font-size: 8px; color: #94a3b8; font-style: italic;">(Assinatura do Responsável)</span>
-          </div>
-          <div style="border-bottom: 1.5px solid #0f172a; margin-bottom: 4px;"></div>
+          <div style="height: 50px;"></div>
+          <div style="border-bottom: 1.5px solid #0f172a; margin-bottom: 5px;"></div>
           <strong style="font-size: 9.5px; color: #0f172a; display: block;">${nomeEmpresa || 'COMPUSERVE LTDA'}</strong>
           <span style="font-size: 8.5px; font-weight: 700; color: #4338ca; display: block;">CNPJ: ${cnpjExibicao}</span>
-          <span style="font-size: 8px; color: #64748b;">Gestor Financeiro / Responsável</span>
+          <span style="font-size: 8px; color: #64748b;">Assinatura do Gestor / Responsável</span>
         </div>
       </div>
 
