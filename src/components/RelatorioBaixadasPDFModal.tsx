@@ -24,7 +24,7 @@ export function gerarEImprimirRelatorioPDF(
   cnpjEmpresa: string | undefined,
   tipo: TipoRelatorioPDF,
   subtituloPeriodo?: string,
-  agruparPorCliente: boolean = true
+  agruparPorCliente: boolean = false
 ) {
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
@@ -373,7 +373,7 @@ export const RelatorioBaixadasPDFModal: React.FC<RelatorioPDFModalProps> = ({
   subtituloPeriodo
 }) => {
   const [tipo, setTipo] = useState<TipoRelatorioPDF>(tipoInicial);
-  const [agruparPorCliente, setAgruparPorCliente] = useState<boolean>(true);
+  const [agruparPorCliente, setAgruparPorCliente] = useState<boolean>(false);
 
   if (!isOpen) return null;
 
@@ -504,7 +504,7 @@ export const RelatorioBaixadasPDFModal: React.FC<RelatorioPDFModalProps> = ({
               onClick={() => setAgruparPorCliente(false)}
               className={`py-2 px-2 rounded-xl text-[11px] font-extrabold transition-all flex items-center justify-center gap-1.5 ${
                 !agruparPorCliente
-                  ? 'bg-slate-800 text-white shadow-md'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-900/40'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
