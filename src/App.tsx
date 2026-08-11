@@ -456,6 +456,14 @@ export const App: React.FC = () => {
     setConfig(getConfig());
   };
 
+  const checkPermission = (acao: string): boolean => {
+    if (usuario?.role === 'visualizador') {
+      alert(`🔒 Acesso Negado\n\nSeu perfil de usuário (Somente Leitura) não possui permissão para ${acao}.\n\nVocê pode consultar relatórios, emitir recibos e enviar cobranças no WhatsApp normalmente, mas não pode dar baixa, alterar ou excluir dados.`);
+      return false;
+    }
+    return true;
+  };
+
   return (
     <div className="app-container">
       {/* Top Header */}
@@ -473,10 +481,16 @@ export const App: React.FC = () => {
           <Dashboard
             indicadores={indicadores}
             cobrancas={cobrancas}
-            onOpenNovaCobranca={() => setIsNovaCobrancaOpen(true)}
+            onOpenNovaCobranca={() => {
+              if (!checkPermission('cadastrar novas cobranças')) return;
+              setIsNovaCobrancaOpen(true);
+            }}
             onOpenWhatsAppModal={(cob) => setWhatsAppCobranca(cob)}
             onVerTodasCobrancas={() => setActiveTab('cobrancas')}
-            onSelectCobranca={(cob) => setCobrancaParaEditar(cob)}
+            onSelectCobranca={(cob) => {
+              if (!checkPermission('editar cobranças')) return;
+              setCobrancaParaEditar(cob);
+            }}
             isReadOnly={usuario?.role === 'visualizador'}
           />
         )}
@@ -484,20 +498,47 @@ export const App: React.FC = () => {
         {activeTab === 'cobrancas' && (
           <CobrancaList
             cobrancas={cobrancas}
-            onOpenNovaCobranca={() => setIsNovaCobrancaOpen(true)}
-            onOpenGerarMensalidades={() => setIsGerarMensalidadesOpen(true)}
+            onOpenNovaCobranca={() => {
+              if (!checkPermission('cadastrar novas cobranças')) return;
+              setIsNovaCobrancaOpen(true);
+            }}
+            onOpenGerarMensalidades={() => {
+              if (!checkPermission('gerar cobranças em lote')) return;
+              setIsGerarMensalidadesOpen(true);
+            }}
             onOpenWhatsAppModal={(cob) => setWhatsAppCobranca(cob)}
             onOpenReciboModal={(cob) => {
               setReciboCobranca(cob);
               setReciboConfetti(false);
             }}
-            onOpenEditarModal={(cob) => setCobrancaParaEditar(cob)}
-            onOpenBaixarModal={(cob) => setCobrancaParaBaixar(cob)}
-            onMarcarComoPago={handleMarcarComoPago}
-            onMarcarComoCancelado={handleMarcarComoCancelado}
-            onDeletarCobranca={handleDeletarCobranca}
-            onEstornarCobranca={handleEstornarCobranca}
-            onLimparDuplicadas={handleLimparDuplicadas}
+            onOpenEditarModal={(cob) => {
+              if (!checkPermission('editar cobranças')) return;
+              setCobrancaParaEditar(cob);
+            }}
+            onOpenBaixarModal={(cob) => {
+              if (!checkPermission('dar baixa em cobranças')) return;
+              setCobrancaParaBaixar(cob);
+            }}
+            onMarcarComoPago={(id) => {
+              if (!checkPermission('dar baixa em cobranças')) return;
+              handleMarcarComoPago(id);
+            }}
+            onMarcarComoCancelado={(id) => {
+              if (!checkPermission('cancelar cobranças')) return;
+              handleMarcarComoCancelado(id);
+            }}
+            onDeletarCobranca={(id) => {
+              if (!checkPermission('excluir cobranças')) return;
+              handleDeletarCobranca(id);
+            }}
+            onEstornarCobranca={(id) => {
+              if (!checkPermission('estornar baixas de cobranças')) return;
+              handleEstornarCobranca(id);
+            }}
+            onLimparDuplicadas={() => {
+              if (!checkPermission('limpar cobranças duplicadas')) return;
+              handleLimparDuplicadas();
+            }}
             isReadOnly={usuario?.role === 'visualizador'}
           />
         )}
@@ -506,11 +547,24 @@ export const App: React.FC = () => {
           <ClienteList
             clientes={clientes}
             cobrancas={cobrancas}
-            onOpenNovoCliente={() => setIsNovoClienteOpen(true)}
-            onOpenImportarExcel={() => setIsImportarExcelOpen(true)}
-            onOpenEditarCliente={(cliente) => setClienteParaEditar(cliente)}
-            onDeletarCliente={handleDeletarCliente}
+            onOpenNovoCliente={() => {
+              if (!checkPermission('cadastrar novos clientes')) return;
+              setIsNovoClienteOpen(true);
+            }}
+            onOpenImportarExcel={() => {
+              if (!checkPermission('importar planilhas do Excel')) return;
+              setIsImportarExcelOpen(true);
+            }}
+            onOpenEditarCliente={(cliente) => {
+              if (!checkPermission('editar cadastro de clientes')) return;
+              setClienteParaEditar(cliente);
+            }}
+            onDeletarCliente={(id) => {
+              if (!checkPermission('excluir clientes')) return;
+              handleDeletarCliente(id);
+            }}
             onNovaCobrancaParaCliente={(cliente) => {
+              if (!checkPermission('cadastrar novas cobranças')) return;
               setClientePreSelecionado(cliente);
               setIsNovaCobrancaOpen(true);
             }}
@@ -535,7 +589,10 @@ export const App: React.FC = () => {
         {activeTab === 'config' && (
           <ConfigView
             config={config}
-            onSalvarConfig={handleSalvarConfig}
+            onSalvarConfig={(novaConfig) => {
+              if (!checkPermission('alterar configurações da empresa')) return;
+              handleSalvarConfig(novaConfig);
+            }}
             clientes={clientes}
             cobrancas={cobrancas}
             usuarios={usuariosList}

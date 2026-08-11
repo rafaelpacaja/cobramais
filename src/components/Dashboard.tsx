@@ -51,15 +51,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </p>
 
           <div className="mt-4 flex items-center gap-2">
-            {!isReadOnly && (
-              <button
-                onClick={onOpenNovaCobranca}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-indigo-900 font-bold text-xs shadow-lg shadow-black/20 hover:bg-slate-100 transition-all active:scale-95"
-              >
-                <Plus className="w-4 h-4 stroke-[3]" />
-                Nova Cobrança
-              </button>
-            )}
+            <button
+              onClick={onOpenNovaCobranca}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-indigo-900 font-bold text-xs shadow-lg shadow-black/20 hover:bg-slate-100 transition-all active:scale-95"
+            >
+              <Plus className="w-4 h-4 stroke-[3]" />
+              Nova Cobrança
+            </button>
             
             <button
               onClick={onVerTodasCobrancas}
