@@ -141,6 +141,10 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
   };
 
   const handleExportBackup = () => {
+    if (usuarioLogado?.role === 'visualizador') {
+      alert('🔒 Acesso Negado\n\nSeu perfil de usuário (Somente Leitura) não possui permissão para exportar cópias de segurança (Backup). Apenas administradores podem realizar backups do sistema.');
+      return;
+    }
     const backupData = {
       config: { nomeEmpresa, cnpjEmpresa, chavePixPadrao },
       clientes,
@@ -159,6 +163,11 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
   };
 
   const handleImportBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (usuarioLogado?.role === 'visualizador') {
+      alert('🔒 Acesso Negado\n\nSeu perfil de usuário (Somente Leitura) não possui permissão para restaurar backups. Apenas administradores podem realizar restaurações.');
+      e.target.value = '';
+      return;
+    }
     const file = e.target.files?.[0];
     if (!file) return;
 
