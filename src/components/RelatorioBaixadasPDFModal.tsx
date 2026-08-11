@@ -161,25 +161,25 @@ export function gerarEImprimirRelatorioPDF(
         }
 
         return `
-          <tr style="background-color: ${rowBg}; font-size: 10px;">
-            <td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold; color: #64748b;">${globalCounter}</td>
-            <td style="padding: 5px 6px; border: 1px solid #cbd5e1; font-weight: bold; color: #0f172a;">${item.clienteNome}</td>
-            <td style="padding: 5px 6px; border: 1px solid #cbd5e1; font-family: monospace; font-size: 9px; color: #475569;">${grupo.documento}</td>
-            <td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: center; font-weight: 800; color: #4338ca; font-size: 10px;">${mesRefFinal}</td>
-            <td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: center; color: #475569; font-weight: 600;">${formatDateBR(item.dataVencimento)}</td>
-            <td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: center;">${statusBadgeHtml}</td>
-            ${exibirForma ? `<td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: center; text-transform: uppercase; font-weight: bold; font-size: 9px; color: #334155;">${item.formaPagamento}</td>` : ''}
-            <td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: right; font-weight: 800; color: ${item.status === 'atrasado' ? '#b91c1c' : item.status === 'pago' ? '#047857' : '#0f172a'};">${formatCurrency(item.valor)}</td>
+          <tr style="background-color: ${rowBg}; font-size: 9px; page-break-inside: avoid; break-inside: avoid;">
+            <td style="padding: 3.5px 5px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold; color: #64748b; white-space: nowrap;">${globalCounter}</td>
+            <td style="padding: 3.5px 5px; border: 1px solid #cbd5e1; font-weight: bold; color: #0f172a; word-break: break-word;">${item.clienteNome}</td>
+            <td style="padding: 3.5px 5px; border: 1px solid #cbd5e1; font-family: monospace; font-size: 8.5px; color: #475569; white-space: nowrap;">${grupo.documento}</td>
+            <td style="padding: 3.5px 5px; border: 1px solid #cbd5e1; text-align: center; font-weight: 800; color: #4338ca; font-size: 9px; white-space: nowrap;">${mesRefFinal}</td>
+            <td style="padding: 3.5px 5px; border: 1px solid #cbd5e1; text-align: center; color: #475569; font-weight: 600; white-space: nowrap;">${formatDateBR(item.dataVencimento)}</td>
+            <td style="padding: 3.5px 5px; border: 1px solid #cbd5e1; text-align: center; white-space: nowrap;">${statusBadgeHtml}</td>
+            ${exibirForma ? `<td style="padding: 3.5px 5px; border: 1px solid #cbd5e1; text-align: center; text-transform: uppercase; font-weight: bold; font-size: 8.5px; color: #334155; white-space: nowrap;">${item.formaPagamento}</td>` : ''}
+            <td style="padding: 3.5px 5px; border: 1px solid #cbd5e1; text-align: right; font-weight: 800; color: ${item.status === 'atrasado' ? '#b91c1c' : item.status === 'pago' ? '#047857' : '#0f172a'}; white-space: nowrap;">${formatCurrency(item.valor)}</td>
           </tr>
         `;
       }).join('');
 
       const subtotalRow = `
-        <tr style="background: #f1f5f9; font-weight: 800; font-size: 9.5px; page-break-before: avoid; break-before: avoid;">
-          <td colspan="${footerColspan}" style="padding: 6px 8px; border: 1px solid #cbd5e1; text-align: right; color: #334155; text-transform: uppercase;">
+        <tr style="background: #f1f5f9; font-weight: 800; font-size: 9px; page-break-inside: avoid; break-inside: avoid;">
+          <td colspan="${footerColspan}" style="padding: 4px 6px; border: 1px solid #cbd5e1; text-align: right; color: #334155; text-transform: uppercase; white-space: nowrap;">
             SUB-TOTAL: ${grupo.itens.length} TÍTULO(S) DE ${grupo.clienteNome}:
           </td>
-          <td style="padding: 6px 8px; border: 1px solid #cbd5e1; text-align: right; font-weight: 900; color: ${tipo === 'atrasados' ? '#b91c1c' : '#047857'}; font-size: 11px;">
+          <td style="padding: 4px 6px; border: 1px solid #cbd5e1; text-align: right; font-weight: 900; color: ${tipo === 'atrasados' ? '#b91c1c' : '#047857'}; font-size: 10px; white-space: nowrap;">
             ${formatCurrency(subtotalCliente)}
           </td>
         </tr>
@@ -199,26 +199,26 @@ export function gerarEImprimirRelatorioPDF(
       let rowBg = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
 
       if (item.status === 'pago') {
-        statusBadgeHtml = `<span style="background: #d1fae5; color: #047857; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 8.5px;">PAGO</span>`;
+        statusBadgeHtml = `<span style="background: #d1fae5; color: #047857; font-weight: bold; padding: 1.5px 5px; border-radius: 4px; font-size: 8px;">PAGO</span>`;
       } else if (item.status === 'atrasado') {
-        statusBadgeHtml = `<span style="background: #fee2e2; color: #b91c1c; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 8.5px;">ATRASADO</span>`;
+        statusBadgeHtml = `<span style="background: #fee2e2; color: #b91c1c; font-weight: bold; padding: 1.5px 5px; border-radius: 4px; font-size: 8px;">ATRASADO</span>`;
         rowBg = '#fff1f2';
       } else if (item.status === 'pendente') {
-        statusBadgeHtml = `<span style="background: #fef3c7; color: #b45309; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 8.5px;">PENDENTE</span>`;
+        statusBadgeHtml = `<span style="background: #fef3c7; color: #b45309; font-weight: bold; padding: 1.5px 5px; border-radius: 4px; font-size: 8px;">PENDENTE</span>`;
       } else {
-        statusBadgeHtml = `<span style="background: #f1f5f9; color: #64748b; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 8.5px;">CANCELADO</span>`;
+        statusBadgeHtml = `<span style="background: #f1f5f9; color: #64748b; font-weight: bold; padding: 1.5px 5px; border-radius: 4px; font-size: 8px;">CANCELADO</span>`;
       }
 
       return `
-        <tr style="background-color: ${rowBg}; font-size: 10px;">
-          <td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold; color: #64748b;">${idx + 1}</td>
-          <td style="padding: 5px 6px; border: 1px solid #cbd5e1; font-weight: bold; color: #0f172a;">${item.clienteNome}</td>
-          <td style="padding: 5px 6px; border: 1px solid #cbd5e1; font-family: monospace; font-size: 9px; color: #475569;">${doc}</td>
-          <td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: center; font-weight: 800; color: #4338ca; font-size: 10px;">${mesRefFinal}</td>
-          <td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: center; color: #475569; font-weight: 600;">${formatDateBR(item.dataVencimento)}</td>
-          <td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: center;">${statusBadgeHtml}</td>
-          ${exibirForma ? `<td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: center; text-transform: uppercase; font-weight: bold; font-size: 9px; color: #334155;">${item.formaPagamento}</td>` : ''}
-          <td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: right; font-weight: 800; color: ${item.status === 'atrasado' ? '#b91c1c' : item.status === 'pago' ? '#047857' : '#0f172a'};">${formatCurrency(item.valor)}</td>
+        <tr style="background-color: ${rowBg}; font-size: 9px; page-break-inside: avoid; break-inside: avoid;">
+          <td style="padding: 3.5px 5px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold; color: #64748b; white-space: nowrap;">${idx + 1}</td>
+          <td style="padding: 3.5px 5px; border: 1px solid #cbd5e1; font-weight: bold; color: #0f172a; word-break: break-word;">${item.clienteNome}</td>
+          <td style="padding: 3.5px 5px; border: 1px solid #cbd5e1; font-family: monospace; font-size: 8.5px; color: #475569; white-space: nowrap;">${doc}</td>
+          <td style="padding: 3.5px 5px; border: 1px solid #cbd5e1; text-align: center; font-weight: 800; color: #4338ca; font-size: 9px; white-space: nowrap;">${mesRefFinal}</td>
+          <td style="padding: 3.5px 5px; border: 1px solid #cbd5e1; text-align: center; color: #475569; font-weight: 600; white-space: nowrap;">${formatDateBR(item.dataVencimento)}</td>
+          <td style="padding: 3.5px 5px; border: 1px solid #cbd5e1; text-align: center; white-space: nowrap;">${statusBadgeHtml}</td>
+          ${exibirForma ? `<td style="padding: 3.5px 5px; border: 1px solid #cbd5e1; text-align: center; text-transform: uppercase; font-weight: bold; font-size: 8.5px; color: #334155; white-space: nowrap;">${item.formaPagamento}</td>` : ''}
+          <td style="padding: 3.5px 5px; border: 1px solid #cbd5e1; text-align: right; font-weight: 800; color: ${item.status === 'atrasado' ? '#b91c1c' : item.status === 'pago' ? '#047857' : '#0f172a'}; white-space: nowrap;">${formatCurrency(item.valor)}</td>
         </tr>
       `;
     }).join('');
@@ -243,54 +243,57 @@ export function gerarEImprimirRelatorioPDF(
         body {
           font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
           margin: 0;
-          padding: 12px 16px;
+          padding: 8px 12px;
           color: #0f172a;
           background: #ffffff;
         }
         @page {
           size: A4 portrait;
-          margin: 6mm 8mm;
+          margin: 5mm 6mm;
         }
         .header {
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
           border-bottom: 3px solid #0f172a;
-          padding-bottom: 8px;
-          margin-bottom: 12px;
+          padding-bottom: 6px;
+          margin-bottom: 10px;
         }
         table {
           width: 100%;
           border-collapse: collapse;
-          margin-bottom: 12px;
+          margin-bottom: 8px;
         }
         thead {
           display: table-header-group;
         }
         tfoot {
           display: table-footer-group;
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
         }
         tr {
-          break-inside: avoid;
-          page-break-inside: avoid;
+          break-inside: avoid !important;
+          page-break-inside: avoid !important;
         }
         th {
           background: #0f172a;
           color: #ffffff;
-          font-size: 9px;
+          font-size: 8.5px;
           text-transform: uppercase;
-          padding: 6px 6px;
+          padding: 4px 5px;
           border: 1px solid #0f172a;
+          white-space: nowrap;
         }
         .footer {
           display: flex;
           justify-content: space-between;
           align-items: flex-end;
-          margin-top: 16px;
-          padding-top: 8px;
+          margin-top: 12px;
+          padding-top: 6px;
           border-top: 1px solid #cbd5e1;
-          break-inside: avoid;
-          page-break-inside: avoid;
+          break-inside: avoid !important;
+          page-break-inside: avoid !important;
         }
       </style>
     </head>
@@ -298,40 +301,40 @@ export function gerarEImprimirRelatorioPDF(
       <div class="header">
         <div>
           <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="background: #0f172a; color: #ffffff; font-weight: 900; padding: 3px 7px; border-radius: 4px; font-size: 11px;">C$ COBRAMAIS</span>
-            <span style="background: ${badgeHeaderBg}; color: ${badgeHeaderColor}; font-weight: 800; padding: 2px 7px; border-radius: 4px; font-size: 9px;">${badgeHeader}</span>
+            <span style="background: #0f172a; color: #ffffff; font-weight: 900; padding: 2px 6px; border-radius: 4px; font-size: 10px;">C$ COBRAMAIS</span>
+            <span style="background: ${badgeHeaderBg}; color: ${badgeHeaderColor}; font-weight: 800; padding: 2px 6px; border-radius: 4px; font-size: 8.5px;">${badgeHeader}</span>
           </div>
-          <h1 style="font-size: 17px; font-weight: 900; margin: 4px 0 1px 0; color: #0f172a;">${nomeEmpresa || 'COMPUSERVE LTDA'}</h1>
-          <p style="font-size: 10.5px; font-weight: 800; color: #4338ca; margin: 0 0 2px 0;">CNPJ: ${cnpjExibicao} ${subtituloPeriodo ? ` &bull; <span style="color: #047857; font-weight: 900;">${subtituloPeriodo}</span>` : ''}</p>
-          <p style="font-size: 9.5px; color: #64748b; margin: 0;">${subTituloRelatorio}</p>
+          <h1 style="font-size: 16px; font-weight: 900; margin: 3px 0 1px 0; color: #0f172a;">${nomeEmpresa || 'COMPUSERVE LTDA'}</h1>
+          <p style="font-size: 10px; font-weight: 800; color: #4338ca; margin: 0 0 2px 0;">CNPJ: ${cnpjExibicao} ${subtituloPeriodo ? ` &bull; <span style="color: #047857; font-weight: 900;">${subtituloPeriodo}</span>` : ''}</p>
+          <p style="font-size: 9px; color: #64748b; margin: 0;">${subTituloRelatorio}</p>
         </div>
-        <div style="text-align: right; font-size: 10px;">
+        <div style="text-align: right; font-size: 9.5px;">
           <p style="margin: 0 0 2px 0;"><strong>Emissão:</strong> ${dataEmissao}</p>
-          <p style="margin: 0 0 3px 0; font-family: monospace; font-size: 9px; color: #64748b;">Autenticação: ${reportHash}</p>
-          <span style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold;">✔ Auditado (Ordem Alfabética)</span>
+          <p style="margin: 0 0 3px 0; font-family: monospace; font-size: 8.5px; color: #64748b;">Autenticação: ${reportHash}</p>
+          <span style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 1.5px 5px; border-radius: 4px; font-size: 8.5px; font-weight: bold;">✔ Auditado (Ordem Alfabética)</span>
         </div>
       </div>
 
       <table>
         <thead>
           <tr>
-            <th style="text-align: center; width: 24px;">#</th>
+            <th style="text-align: center; width: 22px;">#</th>
             <th style="text-align: left;">CLIENTE / DEVEDOR</th>
-            <th style="text-align: left;">CPF / CNPJ</th>
-            <th style="text-align: center;">MÊS REF.</th>
-            <th style="text-align: center;">VENCIMENTO</th>
-            <th style="text-align: center;">STATUS</th>
-            ${exibirForma ? `<th style="text-align: center;">FORMA</th>` : ''}
-            <th style="text-align: right;">VALOR DA COBRANÇA</th>
+            <th style="text-align: left; width: 135px;">CPF / CNPJ</th>
+            <th style="text-align: center; width: 70px;">MÊS REF.</th>
+            <th style="text-align: center; width: 80px;">VENCIMENTO</th>
+            <th style="text-align: center; width: 68px;">STATUS</th>
+            ${exibirForma ? `<th style="text-align: center; width: 60px;">FORMA</th>` : ''}
+            <th style="text-align: right; width: 100px;">VALOR DA COBRANÇA</th>
           </tr>
         </thead>
         <tbody>
           ${rowsHtml}
         </tbody>
         <tfoot>
-          <tr style="background: #0f172a; color: #ffffff; font-weight: 900; font-size: 9.5px;">
-            <td colspan="${footerColspan}" style="padding: 7px 8px; text-align: right; text-transform: uppercase;">TOTAL GERAL DO RELATÓRIO:</td>
-            <td style="padding: 7px 8px; text-align: right; color: ${tipo === 'atrasados' ? '#f87171' : '#34d399'}; font-size: 11.5px;">${totalFormatadoRodape}</td>
+          <tr style="background: #0f172a; color: #ffffff; font-weight: 900; font-size: 9px;">
+            <td colspan="${footerColspan}" style="padding: 5px 6px; text-align: right; text-transform: uppercase;">TOTAL GERAL DO RELATÓRIO:</td>
+            <td style="padding: 5px 6px; text-align: right; color: ${tipo === 'atrasados' ? '#f87171' : '#34d399'}; font-size: 10.5px; white-space: nowrap;">${totalFormatadoRodape}</td>
           </tr>
         </tfoot>
       </table>
