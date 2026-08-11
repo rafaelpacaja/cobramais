@@ -103,6 +103,7 @@ export default async function handler(req: any, res: any) {
       const configRows = await sql`SELECT * FROM app_config WHERE id = 'default' LIMIT 1;`;
       const clientesRows = await sql`SELECT * FROM clientes ORDER BY created_at DESC;`;
       const cobrancasRows = await sql`SELECT * FROM cobrancas ORDER BY created_at DESC;`;
+      const usuariosRows = await sql`SELECT id, nome, email, role, created_at FROM usuarios ORDER BY created_at DESC;`;
 
       const config = configRows.length > 0 ? {
         nomeEmpresa: configRows[0].nome_empresa || 'COMPUSERVE LTDA',
@@ -141,11 +142,20 @@ export default async function handler(req: any, res: any) {
         createdAt: c.created_at
       }));
 
+      const usuarios = usuariosRows.map((u: any) => ({
+        id: u.id,
+        nome: u.nome,
+        email: u.email,
+        role: u.role === 'admin' ? 'admin' : 'visualizador',
+        createdAt: u.created_at
+      }));
+
       return res.status(200).json({
         connected: true,
         config,
         clientes,
-        cobrancas
+        cobrancas,
+        usuarios
       });
     }
 
@@ -254,7 +264,7 @@ export default async function handler(req: any, res: any) {
           id: u.id,
           nome: u.nome,
           email: u.email,
-          role: u.role || 'admin',
+          role: u.role === 'admin' ? 'admin' : (u.role || 'visualizador'),
           empresa: u.empresa || 'COMPUSERVE LTDA',
           cnpj: u.cnpj || '60.060.102/0001-24',
           telefone: u.telefone || '',

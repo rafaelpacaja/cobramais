@@ -19,7 +19,7 @@ import {
   Phone,
   KeyRound
 } from 'lucide-react';
-import { Cliente, Cobranca } from '../types';
+import { Cliente, Cobranca, Usuario } from '../types';
 import { AppConfig, getUsuarioLogado } from '../services/storage';
 import { AlterarSenhaModal } from './AlterarSenhaModal';
 
@@ -28,6 +28,7 @@ interface ConfigViewProps {
   onSalvarConfig: (novaConfig: AppConfig) => void;
   clientes: Cliente[];
   cobrancas: Cobranca[];
+  usuarios?: Usuario[];
   onRestaurarDados: (clientes: Cliente[], cobrancas: Cobranca[]) => void;
   onResetSeedData: () => void;
 }
@@ -37,6 +38,7 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
   onSalvarConfig,
   clientes,
   cobrancas,
+  usuarios = [],
   onRestaurarDados,
   onResetSeedData
 }) => {
@@ -329,6 +331,34 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
         <p className="text-xs text-slate-400 leading-relaxed">
           Cadastre novos gestores ou operadores para ter acesso ao sistema CobraMais com login e senha próprios.
         </p>
+
+        {usuarios && usuarios.length > 0 && (
+          <div className="space-y-2 pt-2 border-t border-slate-800/80">
+            <span className="text-[11px] font-bold text-slate-300 flex items-center justify-between">
+              <span>Usuários da Equipe Cadastrados ({usuarios.length}):</span>
+              <span className="text-[10px] text-slate-500 font-normal">Para testar o acesso, faça logout no topo.</span>
+            </span>
+
+            <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+              {usuarios.map((u, idx) => (
+                <div key={u.id || idx} className="p-2.5 rounded-xl bg-slate-950/90 border border-slate-800/90 flex items-center justify-between text-xs shadow-inner">
+                  <div className="truncate pr-2">
+                    <p className="font-bold text-slate-100 truncate">{u.nome || u.email}</p>
+                    <p className="text-[10px] text-slate-400 truncate">{u.email}</p>
+                  </div>
+
+                  <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-lg border shrink-0 ${
+                    u.role === 'visualizador' 
+                      ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' 
+                      : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                  }`}>
+                    {u.role === 'visualizador' ? '👁️ Somente Leitura' : '👑 Administrador'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Seção de Backup e Restauração */}

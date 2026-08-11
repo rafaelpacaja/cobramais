@@ -74,6 +74,8 @@ export const App: React.FC = () => {
   const [cobrancaParaExcluir, setCobrancaParaExcluir] = useState<Cobranca | null>(null);
   const [isReciboAvulsoOpen, setIsReciboAvulsoOpen] = useState(false);
 
+  const [usuariosList, setUsuariosList] = useState<Usuario[]>([]);
+
   // Carrega dados iniciais do LocalStorage e sincroniza com o Neon Database
   useEffect(() => {
     const listClientes = getClientes();
@@ -125,6 +127,9 @@ export const App: React.FC = () => {
         setClientes(getClientes());
         setCobrancas(getCobrancas());
         setConfig(getConfig());
+        if (Array.isArray(neonRes.usuarios)) {
+          setUsuariosList(neonRes.usuarios);
+        }
       } else {
         pushToNeonDatabase();
       }
@@ -533,6 +538,7 @@ export const App: React.FC = () => {
             onSalvarConfig={handleSalvarConfig}
             clientes={clientes}
             cobrancas={cobrancas}
+            usuarios={usuariosList}
             onRestaurarDados={handleRestaurarDados}
             onResetSeedData={handleResetSeedData}
           />
