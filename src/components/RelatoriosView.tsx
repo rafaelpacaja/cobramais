@@ -99,11 +99,13 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
   const totalEmAtraso = cobrancasFiltradas.filter(c => c.status === 'atrasado').reduce((a, c) => a + c.valor, 0);
   const totalGeralFiltrado = totalRecebido + totalAReceber + totalEmAtraso;
 
-  // Agrupamento por forma de pagamento no período
-  const porFormaPgto = cobrancasFiltradas.reduce((acc, c) => {
-    acc[c.formaPagamento] = (acc[c.formaPagamento] || 0) + c.valor;
-    return acc;
-  }, {} as Record<string, number>);
+  // Agrupamento por forma de pagamento das cobranças QUITADAS no período
+  const porFormaPgto = cobrancasFiltradas
+    .filter(c => c.status === 'pago')
+    .reduce((acc, c) => {
+      acc[c.formaPagamento] = (acc[c.formaPagamento] || 0) + c.valor;
+      return acc;
+    }, {} as Record<string, number>);
 
   // Monta subtítulo descritivo do período para o PDF e CSV
   const subtituloPeriodoStr = useMemo(() => {
@@ -388,12 +390,12 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
             </p>
           ) : (
             Object.entries(porFormaPgto).map(([forma, valor]) => {
-              const pct = totalGeralFiltrado > 0 ? (valor / totalGeralFiltrado) * 100 : 0;
+              const pct = totalRecebido > 0 ? (valor / totalRecebido) * 100 : 0;
               return (
                 <div key={forma} className="p-3 rounded-xl bg-slate-900 border border-slate-800 w-full">
                   <p className="text-[10px] uppercase font-bold text-slate-400">{forma}</p>
                   <p className="text-sm font-extrabold text-slate-100 mt-0.5">{formatCurrency(valor)}</p>
-                  <p className="text-[10px] text-slate-500 mt-1">{pct.toFixed(1)}% do total no período</p>
+                  <p className="text-[10px] text-slate-500 mt-1">{pct.toFixed(1)}% do total quitado</p>
                 </div>
               );
             })
