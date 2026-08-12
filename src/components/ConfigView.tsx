@@ -140,6 +140,36 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
     }
   };
 
+  const handleDeletarUsuario = async (u: Usuario) => {
+    if (usuarioLogado?.role === 'visualizador') {
+      alert('🔒 Acesso Negado\n\nSeu perfil de usuário (Somente Leitura) não possui permissão para excluir usuários da equipe. Apenas administradores podem gerenciar usuários.');
+      return;
+    }
+
+    if (u.email.toLowerCase() === usuarioLogado?.email.toLowerCase()) {
+      alert('⚠️ Operação não permitida!\n\nVocê não pode excluir o seu próprio usuário enquanto estiver conectado.');
+      return;
+    }
+
+    if (confirm(`Tem certeza que deseja EXCLUIR o usuário "${u.nome || u.email}" (${u.email})?\n\nEste usuário perderá imediatamente o acesso ao sistema CobraMais.`)) {
+      try {
+        await fetch('/api/db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'delete_usuario',
+            userId: u.id,
+            userEmail: u.email
+          })
+        });
+        alert(`Usuário ${u.nome || u.email} excluído com sucesso!`);
+        window.location.reload();
+      } catch (err) {
+        alert('Erro ao comunicar com o servidor para excluir usuário.');
+      }
+    }
+  };
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleClickRestaurar = () => {
@@ -378,13 +408,24 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
                     <p className="text-[10px] text-slate-400 truncate">{u.email}</p>
                   </div>
 
-                  <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-lg border shrink-0 ${
-                    u.role === 'visualizador' 
-                      ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' 
-                      : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                  }`}>
-                    {u.role === 'visualizador' ? '👁️ Somente Leitura' : '👑 Administrador'}
-                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-lg border shrink-0 ${
+                      u.role === 'visualizador' 
+                        ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' 
+                        : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                    }`}>
+                      {u.role === 'visualizador' ? '👁️ Somente Leitura' : '👑 Administrador'}
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => handleDeletarUsuario(u)}
+                      title="Excluir Usuário"
+                      className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-all active:scale-95 flex items-center justify-center"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

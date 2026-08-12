@@ -181,6 +181,17 @@ export default async function handler(req: any, res: any) {
         return res.status(200).json({ success: true, message: 'Cliente excluído do Neon.' });
       }
 
+      // Exclusão específica de usuário no Neon
+      if (action === 'delete_usuario') {
+        const { userId, userEmail } = body;
+        if (userId) {
+          await sql`DELETE FROM usuarios WHERE id = ${userId};`;
+        } else if (userEmail) {
+          await sql`DELETE FROM usuarios WHERE LOWER(email) = LOWER(${userEmail.trim()});`;
+        }
+        return res.status(200).json({ success: true, message: 'Usuário excluído do Neon.' });
+      }
+
       // Ação de Alteração de Senha
       if (action === 'change_password') {
         if (!email || !novaSenha) {
