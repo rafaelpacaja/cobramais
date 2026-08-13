@@ -72,13 +72,13 @@ export function generateWhatsAppMessage(
 
   switch (template) {
     case 'lembrete_amigavel':
-      return `Olá, ${nomeCliente}! Tudo bem? ${EMOJI_SMILE}\n\nPassando para lembrar que a *${cobranca.descricao}* (Mês Ref: *${mesRef}*) no valor de *${valorFormatado}* ${verboVencer} *${dataVencimentoBR}*.\n\n📱 *Chave PIX para pagamento:*\n${chavePix}\n\n(Caso já tenha efetuado o pagamento, por favor desconsidere esta mensagem). Muito obrigado! - _${nomeEmpresa}_`;
+      return `Olá, ${nomeCliente}! Tudo bem? ${EMOJI_SMILE}\n\nPassando para lembrar que a *${cobranca.descricao}* (Mês Ref: *${mesRef}*) no valor de *${valorFormatado}* ${verboVencer} *${dataVencimentoBR}*.\n\n📱 *Chave PIX (Toque para copiar):*\n\`${chavePix}\` \n\n(Caso já tenha efetuado o pagamento, por favor desconsidere esta mensagem). Muito obrigado! - _${nomeEmpresa}_`;
 
     case 'dia_vencimento':
-      return `Olá, ${nomeCliente}! ${EMOJI_BELL}\n\nLembramos que a *${cobranca.descricao}* (Mês Ref: *${mesRef}*) no valor de *${valorFormatado}* vence *HOJE (${dataVencimentoBR})*.\n\n${EMOJI_MONEY} *Chave PIX para pagamento:*\n${chavePix}\n\nApós o pagamento, gentileza enviar o comprovante por aqui. Muito obrigado! - _${nomeEmpresa}_`;
+      return `Olá, ${nomeCliente}! ${EMOJI_BELL}\n\nLembramos que a *${cobranca.descricao}* (Mês Ref: *${mesRef}*) no valor de *${valorFormatado}* vence *HOJE (${dataVencimentoBR})*.\n\n${EMOJI_MONEY} *Chave PIX (Toque para copiar):*\n\`${chavePix}\` \n\nApós o pagamento, gentileza enviar o comprovante por aqui. Muito obrigado! - _${nomeEmpresa}_`;
 
     case 'em_atraso':
-      return `Olá, ${nomeCliente}.\n\nIdentificamos em nosso sistema uma pendência em aberto referente a *${cobranca.descricao}* (Mês Ref: *${mesRef}*) no valor de *${valorFormatado}*, vencida em *${dataVencimentoBR}*.\n\n📱 *Chave PIX para pagamento:*\n${chavePix}\n\n(Caso já tenha efetuado o pagamento, por favor desconsidere esta mensagem). Muito obrigado! - _${nomeEmpresa}_`;
+      return `Olá, ${nomeCliente}.\n\nIdentificamos em nosso sistema uma pendência em aberto referente a *${cobranca.descricao}* (Mês Ref: *${mesRef}*) no valor de *${valorFormatado}*, vencida em *${dataVencimentoBR}*.\n\n📱 *Chave PIX (Toque para copiar):*\n\`${chavePix}\` \n\n(Caso já tenha efetuado o pagamento, por favor desconsidere esta mensagem). Muito obrigado! - _${nomeEmpresa}_`;
 
     case 'recibo': {
       const dataPagto = cobranca.dataPagamento ? formatDateBR(cobranca.dataPagamento) : formatDateBR(new Date().toISOString().split('T')[0]);

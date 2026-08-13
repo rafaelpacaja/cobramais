@@ -40,6 +40,9 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
   const [customMessage, setCustomMessage] = useState<string>('');
   const [phoneInput, setPhoneInput] = useState<string>('');
   const [copied, setCopied] = useState<boolean>(false);
+  const [copiedPix, setCopiedPix] = useState<boolean>(false);
+
+  const rawPixKey = cobranca?.chavePix || chavePixPadrao || '60.060.102/0001-24';
 
   useEffect(() => {
     if (cobranca) {
@@ -59,7 +62,18 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
     }
   }, [cobranca, selectedTemplate, nomeEmpresa, chavePixPadrao, cnpjEmpresa, clientes]);
 
+  const handleCopyPixKeyOnly = () => {
+    try {
+      navigator.clipboard.writeText(rawPixKey);
+      setCopiedPix(true);
+      setTimeout(() => setCopiedPix(false), 2000);
+    } catch (e) {}
+  };
+
   const handleSendWhatsApp = (app: TipoWhatsAppTarget = targetApp) => {
+    try {
+      navigator.clipboard.writeText(rawPixKey);
+    } catch (e) {}
     openWhatsApp(phoneInput, customMessage, app);
     onClose();
   };
@@ -206,6 +220,30 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Card Chave PIX Rápida */}
+        <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center justify-between gap-2 shadow-inner">
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-extrabold text-emerald-400 flex items-center gap-1.5 truncate">
+              <span>📱 Chave PIX:</span>
+              <code className="px-2 py-0.5 rounded bg-slate-950 text-emerald-300 font-mono text-[11px] border border-emerald-500/30 truncate">
+                {rawPixKey}
+              </code>
+            </p>
+            <p className="text-[10px] text-slate-400 mt-0.5 leading-tight">
+              💡 <strong>Dica:</strong> Cole no Whats como 2ª mensagem para gerar o cartão verde <strong>"Copiar chave Pix"</strong>!
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleCopyPixKeyOnly}
+            className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-md shadow-emerald-900/40 flex items-center gap-1.5 shrink-0 active:scale-95 transition-all cursor-pointer"
+          >
+            {copiedPix ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+            <span>{copiedPix ? 'Copiada!' : 'Copiar PIX'}</span>
+          </button>
         </div>
 
         {/* Text Area / Preview */}
