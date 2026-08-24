@@ -32,13 +32,13 @@ export const EditarCobrancaModal: React.FC<EditarCobrancaModalProps> = ({
   const [status, setStatus] = useState<StatusCobranca>(cobranca.status);
   const [formaPagamento, setFormaPagamento] = useState<FormaPagamento>(cobranca.formaPagamento);
   const [chavePix, setChavePix] = useState(cobranca.chavePix || '');
-  const [categoria, setCategoria] = useState(cobranca.categoria || 'Serviços');
+  const [categoria, setCategoria] = useState(cobranca.categoria || 'Mensalidade');
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategoryInput, setNewCategoryInput] = useState('');
 
-  // Combina lista de categorias
+  // Utiliza as categorias ativas das configurações
   const listaCategoriasMap = new Map<string, string>();
-  [...DEFAULT_CATEGORIAS, ...categorias, (cobranca.categoria || '')].forEach(c => {
+  [...(categorias && categorias.length > 0 ? categorias : DEFAULT_CATEGORIAS), (cobranca.categoria || '')].forEach(c => {
     const trimmed = c.trim();
     if (trimmed && !listaCategoriasMap.has(trimmed.toLowerCase())) {
       listaCategoriasMap.set(trimmed.toLowerCase(), trimmed);

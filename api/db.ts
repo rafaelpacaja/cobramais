@@ -109,6 +109,10 @@ export default async function handler(req: any, res: any) {
         UPDATE cobrancas 
         SET categoria = 'Mensalidade' 
         WHERE categoria = 'Serviços' OR LOWER(categoria) = 'serviços' OR categoria IS NULL OR categoria = '';
+
+        UPDATE cobrancas 
+        SET categoria = 'Implantação' 
+        WHERE LOWER(categoria) = 'implantação/instalação';
       `;
     } catch (e) {
       // Ignora erros de migracao se tabela vazia

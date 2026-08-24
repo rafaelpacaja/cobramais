@@ -248,6 +248,10 @@ export function getCobrancas(): Cobranca[] {
         isModified = true;
         return { ...c, categoria: 'Mensalidade' };
       }
+      if (c.categoria === 'implantação/instalação' || c.categoria === 'Implantação/Instalação') {
+        isModified = true;
+        return { ...c, categoria: 'Implantação' };
+      }
       return c;
     });
 

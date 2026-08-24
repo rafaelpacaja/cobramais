@@ -45,14 +45,14 @@ export const NovaCobrancaModal: React.FC<NovaCobrancaModalProps> = ({
 
   const [formaPagamento, setFormaPagamento] = useState<FormaPagamento>('pix');
   const [chavePix, setChavePix] = useState(chavePixPadrao);
-  const [categoria, setCategoria] = useState('Serviços');
+  const [categoria, setCategoria] = useState('Mensalidade');
   const [totalParcelas, setTotalParcelas] = useState(1);
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategoryInput, setNewCategoryInput] = useState('');
 
-  // Combina lista de categorias
+  // Utiliza as categorias ativas das configurações
   const listaCategoriasMap = new Map<string, string>();
-  [...DEFAULT_CATEGORIAS, ...categorias].forEach(c => {
+  (categorias && categorias.length > 0 ? categorias : DEFAULT_CATEGORIAS).forEach(c => {
     const trimmed = c.trim();
     if (trimmed && !listaCategoriasMap.has(trimmed.toLowerCase())) {
       listaCategoriasMap.set(trimmed.toLowerCase(), trimmed);
