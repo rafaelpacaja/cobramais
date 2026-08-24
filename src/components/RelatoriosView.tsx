@@ -11,7 +11,9 @@ import {
   Filter,
   Layers,
   CalendarDays,
-  Receipt
+  Receipt,
+  Tag,
+  Check
 } from 'lucide-react';
 import { Cobranca, IndicadoresFinanceiros } from '../types';
 import { formatCurrency, formatDateBR } from '../utils/whatsapp';
@@ -33,11 +35,23 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
   onOpenReciboAvulso
 }) => {
   const [tipoFiltro, setTipoFiltro] = useState<TipoFiltroPeriodo>('todos');
+  const [selectedCategorias, setSelectedCategorias] = useState<string[]>([]);
 
   // Mês Atual Automático (ex: "08/2026")
   const now = new Date();
   const currentMesRef = `${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
   const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+  // Extrai lista única de Categorias disponíveis nas cobranças
+  const categoriasDisponiveis = useMemo(() => {
+    const setCat = new Set<string>();
+    cobrancas.forEach(c => {
+      if (c.categoria && c.categoria.trim()) {
+        setCat.add(c.categoria.trim());
+      }
+    });
+    return Array.from(setCat).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  }, [cobrancas]);
 
   // Extrai lista única de Meses de Referência das cobranças cadastradas
   const mesesDisponiveis = useMemo(() => {
@@ -65,6 +79,14 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
 
   const cobrancasFiltradas = useMemo(() => {
     const list = cobrancas.filter(c => {
+      // 1. Filtro de Categorias (Multi-Seleção)
+      if (selectedCategorias.length > 0) {
+        const catVal = (c.categoria || '').trim().toLowerCase();
+        const match = selectedCategorias.some(sc => sc.trim().toLowerCase() === catVal);
+        if (!match) return false;
+      }
+
+      // 2. Filtro de Período
       if (tipoFiltro === 'todos') return true;
 
       if (tipoFiltro === 'mes_atual') {
@@ -91,7 +113,7 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
     return list.sort((a, b) => 
       a.clienteNome.trim().localeCompare(b.clienteNome.trim(), 'pt-BR', { sensitivity: 'base' })
     );
-  }, [cobrancas, tipoFiltro, mesEspecificoSel, dataInicio, dataFim, currentMesRef, currentYearMonth]);
+  }, [cobrancas, selectedCategorias, tipoFiltro, mesEspecificoSel, dataInicio, dataFim, currentMesRef, currentYearMonth]);
 
   // Recalcula indicadores para o período filtrado
   const totalRecebido = cobrancasFiltradas.filter(c => c.status === 'pago').reduce((a, c) => a + c.valor, 0);
@@ -107,18 +129,29 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
       return acc;
     }, {} as Record<string, number>);
 
-  // Monta subtítulo descritivo do período para o PDF e CSV
+  // Monta subtítulo descritivo do período e categorias para o PDF e CSV
   const subtituloPeriodoStr = useMemo(() => {
-    if (tipoFiltro === 'todos') return 'Período: Geral (Todos os registros)';
-    if (tipoFiltro === 'mes_atual') return `Período: Mês Atual (${currentMesRef})`;
-    if (tipoFiltro === 'mes_especifico') return `Período: Mês ${mesEspecificoSel}`;
-    if (tipoFiltro === 'personalizado') {
+    let periodStr = '';
+    if (tipoFiltro === 'todos') periodStr = 'Período: Geral (Todos os registros)';
+    else if (tipoFiltro === 'mes_atual') periodStr = `Período: Mês Atual (${currentMesRef})`;
+    else if (tipoFiltro === 'mes_especifico') periodStr = `Período: Mês ${mesEspecificoSel}`;
+    else if (tipoFiltro === 'personalizado') {
       const iniBR = dataInicio ? formatDateBR(dataInicio) : 'Início';
       const fimBR = dataFim ? formatDateBR(dataFim) : 'Hoje';
-      return `Período: De ${iniBR} até ${fimBR}`;
+      periodStr = `Período: De ${iniBR} até ${fimBR}`;
     }
-    return '';
-  }, [tipoFiltro, currentMesRef, mesEspecificoSel, dataInicio, dataFim]);
+
+    let catStr = '';
+    if (selectedCategorias.length === 1) {
+      catStr = `Categoria: ${selectedCategorias[0]}`;
+    } else if (selectedCategorias.length > 1) {
+      catStr = `Categorias: ${selectedCategorias.join(', ')}`;
+    } else {
+      catStr = 'Todas as Categorias';
+    }
+
+    return `${periodStr} | ${catStr}`;
+  }, [tipoFiltro, currentMesRef, mesEspecificoSel, dataInicio, dataFim, selectedCategorias]);
 
   const handleExportCSV = () => {
     if (cobrancasFiltradas.length === 0) {
@@ -314,8 +347,74 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
             </div>
           </div>
         )}
+        {/* Filtro por Categorias (Multi-Seleção) */}
+        <div className="pt-3 border-t border-slate-800/80 space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-extrabold text-slate-200 flex items-center gap-1.5">
+              <Tag className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Filtrar por Categoria(s):</span>
+            </label>
 
-        {/* Rótulo Informativo do Período */}
+            {selectedCategorias.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setSelectedCategorias([])}
+                className="text-[11px] font-extrabold text-indigo-400 hover:underline cursor-pointer"
+              >
+                Limpar seleção (Todas)
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-1.5">
+            {/* Botão "Todas as Categorias" */}
+            <button
+              type="button"
+              onClick={() => setSelectedCategorias([])}
+              className={`px-3 py-1.5 rounded-xl text-xs font-extrabold border transition-all cursor-pointer ${
+                selectedCategorias.length === 0
+                  ? 'bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-900/40'
+                  : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+              }`}
+            >
+              Todas as Categorias
+            </button>
+
+            {/* Pills para cada Categoria */}
+            {categoriasDisponiveis.map(cat => {
+              const countCat = cobrancas.filter(c => c.categoria && c.categoria.trim().toLowerCase() === cat.trim().toLowerCase()).length;
+              const isSelected = selectedCategorias.some(sc => sc.trim().toLowerCase() === cat.trim().toLowerCase());
+
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => {
+                    if (isSelected) {
+                      setSelectedCategorias(selectedCategorias.filter(c => c.trim().toLowerCase() !== cat.trim().toLowerCase()));
+                    } else {
+                      setSelectedCategorias([...selectedCategorias, cat]);
+                    }
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer ${
+                    isSelected
+                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 border-indigo-400 text-white shadow-md shadow-indigo-900/40'
+                      : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
+                  }`}
+                >
+                  <span>{cat}</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-extrabold ${
+                    isSelected ? 'bg-indigo-900/60 text-indigo-200' : 'bg-slate-900 text-slate-400'
+                  }`}>
+                    {countCat}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Rótulo Informativo do Período e Categorias */}
         <p className="text-[11px] font-bold text-slate-400 italic">
           📌 {subtituloPeriodoStr}
         </p>
