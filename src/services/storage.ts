@@ -158,7 +158,21 @@ export async function syncWithNeonDatabase() {
         saveCobrancas(data.cobrancas, false);
       }
       if (data.config) {
-        saveConfig(data.config, false);
+        const localConfig = getConfig();
+        const mergedCatMap = new Map<string, string>();
+        [...DEFAULT_CATEGORIAS, ...(localConfig.categorias || []), ...(data.config.categorias || [])].forEach(c => {
+          if (typeof c === 'string') {
+            const trimmed = c.trim();
+            if (trimmed && !mergedCatMap.has(trimmed.toLowerCase())) {
+              mergedCatMap.set(trimmed.toLowerCase(), trimmed);
+            }
+          }
+        });
+        const mergedConfig: AppConfig = {
+          ...data.config,
+          categorias: Array.from(mergedCatMap.values())
+        };
+        saveConfig(mergedConfig, false);
       }
       return data;
     }
@@ -298,7 +312,29 @@ export function getConfig(): AppConfig {
 }
 
 export function saveConfig(config: AppConfig, triggerSync = true): void {
-  localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(config));
+  let categoriasToSave = config.categorias;
+  if (!Array.isArray(categoriasToSave) || categoriasToSave.length === 0) {
+    try {
+      const existing = localStorage.getItem(CONFIG_STORAGE_KEY);
+      if (existing) {
+        const parsed = JSON.parse(existing);
+        if (Array.isArray(parsed.categorias) && parsed.categorias.length > 0) {
+          categoriasToSave = parsed.categorias;
+        }
+      }
+    } catch (e) {}
+  }
+
+  if (!Array.isArray(categoriasToSave) || categoriasToSave.length === 0) {
+    categoriasToSave = DEFAULT_CATEGORIAS;
+  }
+
+  const fullConfig: AppConfig = {
+    ...config,
+    categorias: categoriasToSave
+  };
+
+  localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(fullConfig));
   if (triggerSync) {
     pushToNeonDatabase();
   }

@@ -131,7 +131,8 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
       nomeEmpresa: nomeEmpresa.trim(),
       cnpjEmpresa: cnpjEmpresa.trim(),
       chavePixPadrao: chavePixPadrao.trim(),
-      diasAvisoVencimento: config.diasAvisoVencimento || 3
+      diasAvisoVencimento: config.diasAvisoVencimento || 3,
+      categorias: config.categorias || DEFAULT_CATEGORIAS
     });
     setMensagemSalvo(true);
     setTimeout(() => setMensagemSalvo(false), 3000);
