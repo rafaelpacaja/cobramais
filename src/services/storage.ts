@@ -242,9 +242,18 @@ export function getCobrancas(): Cobranca[] {
       localStorage.setItem(COBRANCAS_STORAGE_KEY, JSON.stringify(seedCobrancas));
     }
 
+    let isModified = false;
+    list = list.map(c => {
+      if (c.categoria === 'Serviços' || c.categoria === 'serviços' || !c.categoria) {
+        isModified = true;
+        return { ...c, categoria: 'Mensalidade' };
+      }
+      return c;
+    });
+
     const updatedList = updateOverdueStatuses(list);
-    if (JSON.stringify(updatedList) !== JSON.stringify(list)) {
-      saveCobrancas(updatedList, false);
+    if (isModified || JSON.stringify(updatedList) !== JSON.stringify(list)) {
+      saveCobrancas(updatedList, true);
     }
 
     return updatedList;

@@ -111,7 +111,7 @@ export const App: React.FC = () => {
         newDesc = 'Mensalidade do Sistema Compuserve';
         modified = true;
       }
-      if (c.categoria === 'Importado') {
+      if (c.categoria === 'Importado' || c.categoria === 'Serviços' || c.categoria === 'serviços' || !c.categoria) {
         newCat = 'Mensalidade';
         modified = true;
       }

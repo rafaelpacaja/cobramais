@@ -101,9 +101,18 @@ export default async function handler(req: any, res: any) {
         categoria TEXT,
         parcela_atual INTEGER,
         total_parcelas INTEGER,
-        created_at TEXT
       );
     `;
+
+    try {
+      await sql`
+        UPDATE cobrancas 
+        SET categoria = 'Mensalidade' 
+        WHERE categoria = 'Serviços' OR LOWER(categoria) = 'serviços' OR categoria IS NULL OR categoria = '';
+      `;
+    } catch (e) {
+      // Ignora erros de migracao se tabela vazia
+    }
 
     // 2. Trata GET (Carregar todos os dados do Neon)
     if (req.method === 'GET') {
