@@ -64,9 +64,13 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
   const [editingCatName, setEditingCatName] = useState<string | null>(null);
   const [editingCatValue, setEditingCatValue] = useState<string>('');
 
-  // Lista combinada de categorias
+  // Lista de categorias (respeita as categorias do config e exclusões efetuadas)
+  const rawList = Array.isArray(config.categorias) && config.categorias.length > 0
+    ? config.categorias
+    : DEFAULT_CATEGORIAS;
+
   const categoriasListMap = new Map<string, string>();
-  [...DEFAULT_CATEGORIAS, ...(config.categorias || [])].forEach(c => {
+  rawList.forEach(c => {
     const trimmed = c.trim();
     if (trimmed && !categoriasListMap.has(trimmed.toLowerCase())) {
       categoriasListMap.set(trimmed.toLowerCase(), trimmed);

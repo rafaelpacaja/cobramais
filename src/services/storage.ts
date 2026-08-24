@@ -280,17 +280,18 @@ export function getConfig(): AppConfig {
     const parsed = JSON.parse(data);
     const cnpj = formatCNPJ(parsed.cnpjEmpresa || '60.060.102/0001-24');
     
-    // Processa categorias
-    let categorias: string[] = Array.isArray(parsed.categorias) && parsed.categorias.length > 0 
+    // Respeita as categorias salvas pelo usuário
+    let categorias: string[] = Array.isArray(parsed.categorias) 
       ? parsed.categorias 
       : DEFAULT_CATEGORIAS;
 
-    // Garantir que categorias padrão não se percam e não hajam duplicatas
     const catMap = new Map<string, string>();
-    [...DEFAULT_CATEGORIAS, ...categorias].forEach(c => {
-      const trimmed = c.trim();
-      if (trimmed && !catMap.has(trimmed.toLowerCase())) {
-        catMap.set(trimmed.toLowerCase(), trimmed);
+    categorias.forEach(c => {
+      if (typeof c === 'string') {
+        const trimmed = c.trim();
+        if (trimmed && !catMap.has(trimmed.toLowerCase())) {
+          catMap.set(trimmed.toLowerCase(), trimmed);
+        }
       }
     });
     categorias = Array.from(catMap.values());
@@ -311,19 +312,19 @@ export function getConfig(): AppConfig {
 
 export function saveConfig(config: AppConfig, triggerSync = true): void {
   let categoriasToSave = config.categorias;
-  if (!Array.isArray(categoriasToSave) || categoriasToSave.length === 0) {
+  if (!Array.isArray(categoriasToSave)) {
     try {
       const existing = localStorage.getItem(CONFIG_STORAGE_KEY);
       if (existing) {
         const parsed = JSON.parse(existing);
-        if (Array.isArray(parsed.categorias) && parsed.categorias.length > 0) {
+        if (Array.isArray(parsed.categorias)) {
           categoriasToSave = parsed.categorias;
         }
       }
     } catch (e) {}
   }
 
-  if (!Array.isArray(categoriasToSave) || categoriasToSave.length === 0) {
+  if (!Array.isArray(categoriasToSave)) {
     categoriasToSave = DEFAULT_CATEGORIAS;
   }
 
@@ -393,9 +394,28 @@ export function renomearCategoriaInConfig(categoriaAntiga: string, categoriaNova
 export function removeCategoriaFromConfig(categoriaParaRemover: string): AppConfig {
   const currentConfig = getConfig();
   const list = currentConfig.categorias || DEFAULT_CATEGORIAS;
-  const updatedCategorias = list.filter(c => c.toLowerCase() !== categoriaParaRemover.trim().toLowerCase());
-  const updatedConfig = { ...currentConfig, categorias: updatedCategorias.length > 0 ? updatedCategorias : DEFAULT_CATEGORIAS };
-  saveConfig(updatedConfig);
+  const catTrim = categoriaParaRemover.trim().toLowerCase();
+  const updatedCategorias = list.filter(c => c.trim().toLowerCase() !== catTrim);
+  const updatedConfig = { ...currentConfig, categorias: updatedCategorias };
+  saveConfig(updatedConfig, true);
+
+  // Atualiza cobranças existentes com essa categoria removida para "Mensalidade"
+  try {
+    const cobrancas = getCobrancas();
+    let modified = false;
+    const updatedCobrancas = cobrancas.map(cob => {
+      if (cob.categoria && cob.categoria.trim().toLowerCase() === catTrim) {
+        modified = true;
+        return { ...cob, categoria: 'Mensalidade' };
+      }
+      return cob;
+    });
+
+    if (modified) {
+      saveCobrancas(updatedCobrancas, true);
+    }
+  } catch (err) {}
+
   return updatedConfig;
 }
 
