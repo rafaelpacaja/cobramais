@@ -60,9 +60,16 @@ export default async function handler(req: any, res: any) {
         nome_empresa TEXT,
         cnpj_empresa TEXT,
         chave_pix_padrao TEXT,
-        dias_aviso_vencimento INTEGER
+        dias_aviso_vencimento INTEGER,
+        categorias TEXT
       );
     `;
+
+    try {
+      await sql`ALTER TABLE app_config ADD COLUMN IF NOT EXISTS categorias TEXT;`;
+    } catch (e) {
+      // Coluna ja existente
+    }
 
     await sql`
       CREATE TABLE IF NOT EXISTS clientes (
@@ -109,7 +116,8 @@ export default async function handler(req: any, res: any) {
         nomeEmpresa: configRows[0].nome_empresa || 'COMPUSERVE LTDA',
         cnpjEmpresa: configRows[0].cnpj_empresa || '60.060.102/0001-24',
         chavePixPadrao: configRows[0].chave_pix_padrao || '60.060.102/0001-24',
-        diasAvisoVencimento: configRows[0].dias_aviso_vencimento || 3
+        diasAvisoVencimento: configRows[0].dias_aviso_vencimento || 3,
+        categorias: configRows[0].categorias ? JSON.parse(configRows[0].categorias) : undefined
       } : null;
 
       const clientes = clientesRows.map((c: any) => ({
@@ -287,14 +295,16 @@ export default async function handler(req: any, res: any) {
 
       // Salva Config
       if (config) {
+        const catJson = config.categorias ? JSON.stringify(config.categorias) : null;
         await sql`
-          INSERT INTO app_config (id, nome_empresa, cnpj_empresa, chave_pix_padrao, dias_aviso_vencimento)
-          VALUES ('default', ${config.nomeEmpresa}, ${config.cnpjEmpresa || ''}, ${config.chavePixPadrao}, ${config.diasAvisoVencimento || 3})
+          INSERT INTO app_config (id, nome_empresa, cnpj_empresa, chave_pix_padrao, dias_aviso_vencimento, categorias)
+          VALUES ('default', ${config.nomeEmpresa}, ${config.cnpjEmpresa || ''}, ${config.chavePixPadrao}, ${config.diasAvisoVencimento || 3}, ${catJson})
           ON CONFLICT (id) DO UPDATE SET
             nome_empresa = EXCLUDED.nome_empresa,
             cnpj_empresa = EXCLUDED.cnpj_empresa,
             chave_pix_padrao = EXCLUDED.chave_pix_padrao,
-            dias_aviso_vencimento = EXCLUDED.dias_aviso_vencimento;
+            dias_aviso_vencimento = EXCLUDED.dias_aviso_vencimento,
+            categorias = EXCLUDED.categorias;
         `;
       }
 

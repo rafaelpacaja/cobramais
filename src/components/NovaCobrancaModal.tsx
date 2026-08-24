@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
-import { X, Calendar, DollarSign, User, Tag, CreditCard, QrCode, Plus } from 'lucide-react';
+import { X, Calendar, DollarSign, User, Tag, CreditCard, QrCode, Plus, Check } from 'lucide-react';
 import { Cliente, Cobranca, FormaPagamento } from '../types';
+import { DEFAULT_CATEGORIAS } from '../services/storage';
 
 interface NovaCobrancaModalProps {
   isOpen: boolean;
   onClose: () => void;
   clientes: Cliente[];
   clientePreSelecionado?: Cliente | null;
+  categorias?: string[];
   onSalvarCobranca: (novasCobrancas: Omit<Cobranca, 'id' | 'createdAt'>[]) => void;
   onOpenNovoClienteModal: () => void;
+  onAdicionarCategoria?: (novaCat: string) => void;
   chavePixPadrao: string;
 }
 
@@ -17,8 +20,10 @@ export const NovaCobrancaModal: React.FC<NovaCobrancaModalProps> = ({
   onClose,
   clientes,
   clientePreSelecionado,
+  categorias = DEFAULT_CATEGORIAS,
   onSalvarCobranca,
   onOpenNovoClienteModal,
+  onAdicionarCategoria,
   chavePixPadrao
 }) => {
   if (!isOpen) return null;
@@ -42,6 +47,18 @@ export const NovaCobrancaModal: React.FC<NovaCobrancaModalProps> = ({
   const [chavePix, setChavePix] = useState(chavePixPadrao);
   const [categoria, setCategoria] = useState('Serviços');
   const [totalParcelas, setTotalParcelas] = useState(1);
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCategoryInput, setNewCategoryInput] = useState('');
+
+  // Combina lista de categorias
+  const listaCategoriasMap = new Map<string, string>();
+  [...DEFAULT_CATEGORIAS, ...categorias].forEach(c => {
+    const trimmed = c.trim();
+    if (trimmed && !listaCategoriasMap.has(trimmed.toLowerCase())) {
+      listaCategoriasMap.set(trimmed.toLowerCase(), trimmed);
+    }
+  });
+  const listaCategorias = Array.from(listaCategoriasMap.values());
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -231,22 +248,92 @@ export const NovaCobrancaModal: React.FC<NovaCobrancaModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Categoria
-              </label>
-              <select
-                value={categoria}
-                onChange={(e) => setCategoria(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-100"
-              >
-                <option value="Serviços">Serviços</option>
-                <option value="Vendas">Vendas de Produtos</option>
-                <option value="Consultoria">Consultoria</option>
-                <option value="Mensalidade">Mensalidade / Assinatura</option>
-                <option value="Semestre">Semestre</option>
-                <option value="Anuidade">Anuidade</option>
-                <option value="Outros">Outros</option>
-              </select>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-semibold text-slate-300">
+                  Categoria
+                </label>
+                {!isAddingCategory ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsAddingCategory(true)}
+                    className="text-[11px] font-bold text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3" />
+                    Nova Categoria
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAddingCategory(false);
+                      setNewCategoryInput('');
+                    }}
+                    className="text-[11px] font-semibold text-slate-400 hover:text-slate-200 cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                )}
+              </div>
+
+              {isAddingCategory ? (
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="text"
+                    value={newCategoryInput}
+                    onChange={(e) => setNewCategoryInput(e.target.value)}
+                    placeholder="Nome da nova categoria..."
+                    className="w-full bg-slate-950 border border-indigo-500 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const trimmed = newCategoryInput.trim();
+                        if (trimmed) {
+                          if (onAdicionarCategoria) onAdicionarCategoria(trimmed);
+                          setCategoria(trimmed);
+                          setIsAddingCategory(false);
+                          setNewCategoryInput('');
+                        }
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const trimmed = newCategoryInput.trim();
+                      if (trimmed) {
+                        if (onAdicionarCategoria) onAdicionarCategoria(trimmed);
+                        setCategoria(trimmed);
+                        setIsAddingCategory(false);
+                        setNewCategoryInput('');
+                      }
+                    }}
+                    className="p-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white shrink-0 cursor-pointer"
+                    title="Adicionar"
+                  >
+                    <Check className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <select
+                  value={categoria}
+                  onChange={(e) => {
+                    if (e.target.value === '__add_new__') {
+                      setIsAddingCategory(true);
+                    } else {
+                      setCategoria(e.target.value);
+                    }
+                  }}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:border-indigo-500 cursor-pointer"
+                >
+                  {listaCategorias.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                  <option value="__add_new__" className="text-indigo-400 font-bold bg-slate-900">
+                    ➕ Adicionar Nova Categoria...
+                  </option>
+                </select>
+              )}
             </div>
           </div>
 

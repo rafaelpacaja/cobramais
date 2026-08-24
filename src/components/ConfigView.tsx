@@ -17,10 +17,14 @@ import {
   User, 
   Building2, 
   Phone,
-  KeyRound
+  KeyRound,
+  Tag,
+  Plus,
+  Pencil,
+  Check
 } from 'lucide-react';
 import { Cliente, Cobranca, Usuario } from '../types';
-import { AppConfig, getUsuarioLogado } from '../services/storage';
+import { AppConfig, getUsuarioLogado, DEFAULT_CATEGORIAS } from '../services/storage';
 import { AlterarSenhaModal } from './AlterarSenhaModal';
 
 interface ConfigViewProps {
@@ -31,6 +35,9 @@ interface ConfigViewProps {
   usuarios?: Usuario[];
   onRestaurarDados: (clientes: Cliente[], cobrancas: Cobranca[]) => void;
   onResetSeedData: () => void;
+  onAdicionarCategoria?: (novaCat: string) => void;
+  onRenomearCategoria?: (antigaCat: string, novaCat: string) => void;
+  onRemoverCategoria?: (catParaRemover: string) => void;
 }
 
 export const ConfigView: React.FC<ConfigViewProps> = ({
@@ -40,7 +47,10 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
   cobrancas,
   usuarios = [],
   onRestaurarDados,
-  onResetSeedData
+  onResetSeedData,
+  onAdicionarCategoria,
+  onRenomearCategoria,
+  onRemoverCategoria
 }) => {
   const usuarioLogado = getUsuarioLogado();
 
@@ -48,6 +58,47 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
   const [cnpjEmpresa, setCnpjEmpresa] = useState(config.cnpjEmpresa || '60.060.102/0001-24');
   const [chavePixPadrao, setChavePixPadrao] = useState(config.chavePixPadrao || '60.060.102/0001-24');
   const [mensagemSalvo, setMensagemSalvo] = useState(false);
+
+  // Estados para Gestão de Categorias
+  const [newCatInput, setNewCatInput] = useState('');
+  const [editingCatName, setEditingCatName] = useState<string | null>(null);
+  const [editingCatValue, setEditingCatValue] = useState<string>('');
+
+  // Lista combinada de categorias
+  const categoriasListMap = new Map<string, string>();
+  [...DEFAULT_CATEGORIAS, ...(config.categorias || [])].forEach(c => {
+    const trimmed = c.trim();
+    if (trimmed && !categoriasListMap.has(trimmed.toLowerCase())) {
+      categoriasListMap.set(trimmed.toLowerCase(), trimmed);
+    }
+  });
+  const categoriasList = Array.from(categoriasListMap.values());
+
+  const handleAddCatSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (usuarioLogado?.role === 'visualizador') {
+      alert('🔒 Acesso Negado\n\nSeu perfil de usuário não tem permissão para alterar categorias.');
+      return;
+    }
+    const trimmed = newCatInput.trim();
+    if (!trimmed) return;
+
+    if (onAdicionarCategoria) {
+      onAdicionarCategoria(trimmed);
+      setNewCatInput('');
+    }
+  };
+
+  const handleSaveRenameCat = (antigaCat: string) => {
+    const trimmed = editingCatValue.trim();
+    if (trimmed && trimmed.toLowerCase() !== antigaCat.toLowerCase()) {
+      if (onRenomearCategoria) {
+        onRenomearCategoria(antigaCat, trimmed);
+      }
+    }
+    setEditingCatName(null);
+    setEditingCatValue('');
+  };
 
   // Modal Alterar Senha
   const [isAlterarSenhaModalOpen, setIsAlterarSenhaModalOpen] = useState(false);
@@ -362,6 +413,135 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
             Salvar Configurações
           </button>
         </form>
+      </div>
+
+      {/* Seção de Gestão de Categorias */}
+      <div className="glass-card rounded-2xl p-4 space-y-3">
+        <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
+          <Tag className="w-4 h-4 text-indigo-400" />
+          Gerenciar Categorias de Cobrança
+        </h3>
+
+        <p className="text-xs text-slate-400 leading-relaxed">
+          Altere os nomes, remova ou crie novas categorias para organizar seus títulos e relatórios.
+        </p>
+
+        {/* Formulário de Adicionar Categoria */}
+        <form onSubmit={handleAddCatSubmit} className="flex items-center gap-2">
+          <input
+            type="text"
+            value={newCatInput}
+            onChange={(e) => setNewCatInput(e.target.value)}
+            placeholder="Nova categoria (ex: Manutenção, Licença)..."
+            className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 font-bold focus:border-indigo-500"
+          />
+          <button
+            type="submit"
+            className="h-9 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-md shadow-indigo-900/30 shrink-0 cursor-pointer active:scale-95 transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Adicionar</span>
+          </button>
+        </form>
+
+        {/* Lista de Categorias com Opção de Editar Nome e Excluir */}
+        <div className="pt-2 flex flex-wrap gap-2">
+          {categoriasList.map(cat => {
+            const count = cobrancas.filter(c => c.categoria && c.categoria.toLowerCase() === cat.toLowerCase()).length;
+            const isEditing = editingCatName === cat;
+
+            return (
+              <div
+                key={cat}
+                className="px-3 py-2 rounded-xl bg-slate-950/90 border border-slate-800 flex items-center gap-2 text-xs font-bold text-slate-200 shadow-sm"
+              >
+                {isEditing ? (
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="text"
+                      value={editingCatValue}
+                      onChange={(e) => setEditingCatValue(e.target.value)}
+                      className="bg-slate-900 border border-indigo-500 rounded-lg px-2 py-1 text-xs text-slate-100 font-bold focus:outline-none"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleSaveRenameCat(cat);
+                        } else if (e.key === 'Escape') {
+                          setEditingCatName(null);
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleSaveRenameCat(cat)}
+                      className="p-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer"
+                      title="Salvar novo nome"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingCatName(null)}
+                      className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white cursor-pointer"
+                      title="Cancelar"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <span className="text-slate-100 font-extrabold">{cat}</span>
+                    {count > 0 && (
+                      <span className="text-[10px] bg-slate-800 px-1.5 py-0.5 rounded-md text-indigo-300 font-semibold">
+                        {count} {count === 1 ? 'cobrança' : 'cobranças'}
+                      </span>
+                    )}
+
+                    <div className="flex items-center gap-1 pl-1 border-l border-slate-800">
+                      {/* Botão de Renomear / Alterar Nome */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (usuarioLogado?.role === 'visualizador') {
+                            alert('🔒 Acesso Negado\n\nSeu perfil não tem permissão para alterar categorias.');
+                            return;
+                          }
+                          setEditingCatName(cat);
+                          setEditingCatValue(cat);
+                        }}
+                        className="p-1 rounded text-slate-400 hover:text-indigo-400 hover:bg-slate-900 transition-all cursor-pointer"
+                        title={`Renomear categoria "${cat}"`}
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+
+                      {/* Botão de Excluir Categoria */}
+                      {onRemoverCategoria && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (usuarioLogado?.role === 'visualizador') {
+                              alert('🔒 Acesso Negado\n\nSeu perfil não tem permissão para excluir categorias.');
+                              return;
+                            }
+                            if (confirm(`Tem certeza que deseja APAGAR a categoria "${cat}"?`)) {
+                              onRemoverCategoria(cat);
+                            }
+                          }}
+                          className="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-slate-900 transition-all cursor-pointer"
+                          title={`Apagar categoria "${cat}"`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Seção de Gestão de Usuários da Equipe */}

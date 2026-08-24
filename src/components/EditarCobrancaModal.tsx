@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { X, Edit3, DollarSign, Calendar, QrCode, CreditCard } from 'lucide-react';
+import { X, Edit3, DollarSign, Calendar, QrCode, CreditCard, Plus, Check } from 'lucide-react';
 import { Cliente, Cobranca, FormaPagamento, StatusCobranca } from '../types';
+import { DEFAULT_CATEGORIAS } from '../services/storage';
 
 interface EditarCobrancaModalProps {
   isOpen: boolean;
   onClose: () => void;
   cobranca: Cobranca | null;
   clientes: Cliente[];
+  categorias?: string[];
   onSalvarEdicao: (cobrancaAtualizada: Cobranca) => void;
+  onAdicionarCategoria?: (novaCat: string) => void;
 }
 
 export const EditarCobrancaModal: React.FC<EditarCobrancaModalProps> = ({
@@ -15,7 +18,9 @@ export const EditarCobrancaModal: React.FC<EditarCobrancaModalProps> = ({
   onClose,
   cobranca,
   clientes,
-  onSalvarEdicao
+  categorias = DEFAULT_CATEGORIAS,
+  onSalvarEdicao,
+  onAdicionarCategoria
 }) => {
   if (!isOpen || !cobranca) return null;
 
@@ -28,6 +33,18 @@ export const EditarCobrancaModal: React.FC<EditarCobrancaModalProps> = ({
   const [formaPagamento, setFormaPagamento] = useState<FormaPagamento>(cobranca.formaPagamento);
   const [chavePix, setChavePix] = useState(cobranca.chavePix || '');
   const [categoria, setCategoria] = useState(cobranca.categoria || 'Serviços');
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCategoryInput, setNewCategoryInput] = useState('');
+
+  // Combina lista de categorias
+  const listaCategoriasMap = new Map<string, string>();
+  [...DEFAULT_CATEGORIAS, ...categorias, (cobranca.categoria || '')].forEach(c => {
+    const trimmed = c.trim();
+    if (trimmed && !listaCategoriasMap.has(trimmed.toLowerCase())) {
+      listaCategoriasMap.set(trimmed.toLowerCase(), trimmed);
+    }
+  });
+  const listaCategorias = Array.from(listaCategoriasMap.values());
 
   useEffect(() => {
     if (cobranca) {
@@ -238,22 +255,92 @@ export const EditarCobrancaModal: React.FC<EditarCobrancaModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Categoria
-              </label>
-              <select
-                value={categoria}
-                onChange={(e) => setCategoria(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-100"
-              >
-                <option value="Serviços">Serviços</option>
-                <option value="Vendas">Vendas de Produtos</option>
-                <option value="Consultoria">Consultoria</option>
-                <option value="Mensalidade">Mensalidade</option>
-                <option value="Semestre">Semestre</option>
-                <option value="Anuidade">Anuidade</option>
-                <option value="Outros">Outros</option>
-              </select>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-semibold text-slate-300">
+                  Categoria
+                </label>
+                {!isAddingCategory ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsAddingCategory(true)}
+                    className="text-[11px] font-bold text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3" />
+                    Nova Categoria
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAddingCategory(false);
+                      setNewCategoryInput('');
+                    }}
+                    className="text-[11px] font-semibold text-slate-400 hover:text-slate-200 cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                )}
+              </div>
+
+              {isAddingCategory ? (
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="text"
+                    value={newCategoryInput}
+                    onChange={(e) => setNewCategoryInput(e.target.value)}
+                    placeholder="Nome da nova categoria..."
+                    className="w-full bg-slate-950 border border-indigo-500 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const trimmed = newCategoryInput.trim();
+                        if (trimmed) {
+                          if (onAdicionarCategoria) onAdicionarCategoria(trimmed);
+                          setCategoria(trimmed);
+                          setIsAddingCategory(false);
+                          setNewCategoryInput('');
+                        }
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const trimmed = newCategoryInput.trim();
+                      if (trimmed) {
+                        if (onAdicionarCategoria) onAdicionarCategoria(trimmed);
+                        setCategoria(trimmed);
+                        setIsAddingCategory(false);
+                        setNewCategoryInput('');
+                      }
+                    }}
+                    className="p-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white shrink-0 cursor-pointer"
+                    title="Adicionar"
+                  >
+                    <Check className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <select
+                  value={categoria}
+                  onChange={(e) => {
+                    if (e.target.value === '__add_new__') {
+                      setIsAddingCategory(true);
+                    } else {
+                      setCategoria(e.target.value);
+                    }
+                  }}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:border-indigo-500 cursor-pointer"
+                >
+                  {listaCategorias.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                  <option value="__add_new__" className="text-indigo-400 font-bold bg-slate-900">
+                    ➕ Adicionar Nova Categoria...
+                  </option>
+                </select>
+              )}
             </div>
           </div>
 

@@ -16,6 +16,9 @@ import {
   deleteCobrancaFromNeon,
   deleteClienteFromNeon,
   getTodayString,
+  addCategoriaToConfig,
+  renomearCategoriaInConfig,
+  removeCategoriaFromConfig,
   AppConfig 
 } from './services/storage';
 import { Cliente, Cobranca, FormaPagamento, TabType, Usuario } from './types';
@@ -448,6 +451,22 @@ export const App: React.FC = () => {
     saveConfig(novaConfig);
   };
 
+  const handleAdicionarCategoria = (novaCat: string) => {
+    const novaConfig = addCategoriaToConfig(novaCat);
+    setConfig(novaConfig);
+  };
+
+  const handleRenomearCategoria = (antigaCat: string, novaCat: string) => {
+    const novaConfig = renomearCategoriaInConfig(antigaCat, novaCat);
+    setConfig(novaConfig);
+    setCobrancas(getCobrancas());
+  };
+
+  const handleRemoverCategoria = (catParaRemover: string) => {
+    const novaConfig = removeCategoriaFromConfig(catParaRemover);
+    setConfig(novaConfig);
+  };
+
   const handleRestaurarDados = (novosClientes: Cliente[], novasCobrancas: Cobranca[]) => {
     setClientes(novosClientes);
     setCobrancas(novasCobrancas);
@@ -504,6 +523,7 @@ export const App: React.FC = () => {
         {activeTab === 'cobrancas' && (
           <CobrancaList
             cobrancas={cobrancas}
+            categorias={config.categorias}
             onOpenNovaCobranca={() => {
               if (!checkPermission('cadastrar novas cobranças')) return;
               setIsNovaCobrancaOpen(true);
@@ -604,6 +624,9 @@ export const App: React.FC = () => {
             usuarios={usuariosList}
             onRestaurarDados={handleRestaurarDados}
             onResetSeedData={handleResetSeedData}
+            onAdicionarCategoria={handleAdicionarCategoria}
+            onRenomearCategoria={handleRenomearCategoria}
+            onRemoverCategoria={handleRemoverCategoria}
           />
         )}
       </main>
@@ -624,10 +647,12 @@ export const App: React.FC = () => {
         }}
         clientes={clientes}
         clientePreSelecionado={clientePreSelecionado}
+        categorias={config.categorias}
         onSalvarCobranca={handleSalvarCobranca}
         onOpenNovoClienteModal={() => {
           setIsNovoClienteOpen(true);
         }}
+        onAdicionarCategoria={handleAdicionarCategoria}
         chavePixPadrao={config.chavePixPadrao}
       />
 
@@ -644,7 +669,9 @@ export const App: React.FC = () => {
         onClose={() => setCobrancaParaEditar(null)}
         cobranca={cobrancaParaEditar}
         clientes={clientes}
+        categorias={config.categorias}
         onSalvarEdicao={handleSalvarEdicaoCobranca}
+        onAdicionarCategoria={handleAdicionarCategoria}
       />
 
       <BaixarCobrancaModal

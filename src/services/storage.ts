@@ -10,7 +10,18 @@ export interface AppConfig {
   cnpjEmpresa: string;
   chavePixPadrao: string;
   diasAvisoVencimento: number;
+  categorias?: string[];
 }
+
+export const DEFAULT_CATEGORIAS: string[] = [
+  'Serviços',
+  'Vendas de Produtos',
+  'Consultoria',
+  'Mensalidade',
+  'Semestre',
+  'Anuidade',
+  'Outros'
+];
 
 export function getUsuarioLogado(): Usuario | null {
   try {
@@ -65,7 +76,8 @@ const defaultConfig: AppConfig = {
   nomeEmpresa: 'COMPUSERVE LTDA',
   cnpjEmpresa: '60.060.102/0001-24',
   chavePixPadrao: '60.060.102/0001-24',
-  diasAvisoVencimento: 3
+  diasAvisoVencimento: 3,
+  categorias: DEFAULT_CATEGORIAS
 };
 
 // Dados de demonstração inicial
@@ -255,11 +267,28 @@ export function getConfig(): AppConfig {
     }
     const parsed = JSON.parse(data);
     const cnpj = formatCNPJ(parsed.cnpjEmpresa || '60.060.102/0001-24');
-    const updatedConfig = {
+    
+    // Processa categorias
+    let categorias: string[] = Array.isArray(parsed.categorias) && parsed.categorias.length > 0 
+      ? parsed.categorias 
+      : DEFAULT_CATEGORIAS;
+
+    // Garantir que categorias padrão não se percam e não hajam duplicatas
+    const catMap = new Map<string, string>();
+    [...DEFAULT_CATEGORIAS, ...categorias].forEach(c => {
+      const trimmed = c.trim();
+      if (trimmed && !catMap.has(trimmed.toLowerCase())) {
+        catMap.set(trimmed.toLowerCase(), trimmed);
+      }
+    });
+    categorias = Array.from(catMap.values());
+
+    const updatedConfig: AppConfig = {
       nomeEmpresa: parsed.nomeEmpresa || 'COMPUSERVE LTDA',
       cnpjEmpresa: cnpj,
       chavePixPadrao: formatCNPJ(parsed.chavePixPadrao || '60.060.102/0001-24'),
-      diasAvisoVencimento: parsed.diasAvisoVencimento || 3
+      diasAvisoVencimento: parsed.diasAvisoVencimento || 3,
+      categorias
     };
     localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(updatedConfig));
     return updatedConfig;
@@ -273,6 +302,67 @@ export function saveConfig(config: AppConfig, triggerSync = true): void {
   if (triggerSync) {
     pushToNeonDatabase();
   }
+}
+
+export function addCategoriaToConfig(novaCategoria: string): AppConfig {
+  const currentConfig = getConfig();
+  const trimmed = novaCategoria.trim();
+  if (!trimmed) return currentConfig;
+
+  const list = currentConfig.categorias || DEFAULT_CATEGORIAS;
+  if (!list.some(c => c.toLowerCase() === trimmed.toLowerCase())) {
+    const updatedCategorias = [...list, trimmed];
+    const updatedConfig = { ...currentConfig, categorias: updatedCategorias };
+    saveConfig(updatedConfig);
+    return updatedConfig;
+  }
+  return currentConfig;
+}
+
+export function renomearCategoriaInConfig(categoriaAntiga: string, categoriaNova: string): AppConfig {
+  const currentConfig = getConfig();
+  const list = currentConfig.categorias || DEFAULT_CATEGORIAS;
+  const antigaTrim = categoriaAntiga.trim().toLowerCase();
+  const novaTrim = categoriaNova.trim();
+
+  if (!novaTrim || antigaTrim === novaTrim.toLowerCase()) return currentConfig;
+
+  const updatedCategorias = list.map(c => 
+    c.trim().toLowerCase() === antigaTrim ? novaTrim : c
+  );
+
+  const updatedConfig = { ...currentConfig, categorias: updatedCategorias };
+  saveConfig(updatedConfig);
+
+  // Renomeia também nas cobranças existentes
+  try {
+    const cobrancas = getCobrancas();
+    let modified = false;
+    const updatedCobrancas = cobrancas.map(cob => {
+      if (cob.categoria && cob.categoria.trim().toLowerCase() === antigaTrim) {
+        modified = true;
+        return { ...cob, categoria: novaTrim };
+      }
+      return cob;
+    });
+
+    if (modified) {
+      saveCobrancas(updatedCobrancas);
+    }
+  } catch (err) {
+    console.error('Erro ao renomear categoria nas cobranças:', err);
+  }
+
+  return updatedConfig;
+}
+
+export function removeCategoriaFromConfig(categoriaParaRemover: string): AppConfig {
+  const currentConfig = getConfig();
+  const list = currentConfig.categorias || DEFAULT_CATEGORIAS;
+  const updatedCategorias = list.filter(c => c.toLowerCase() !== categoriaParaRemover.trim().toLowerCase());
+  const updatedConfig = { ...currentConfig, categorias: updatedCategorias.length > 0 ? updatedCategorias : DEFAULT_CATEGORIAS };
+  saveConfig(updatedConfig);
+  return updatedConfig;
 }
 
 export function calcularIndicadores(cobrancas: Cobranca[]): IndicadoresFinanceiros {

@@ -18,9 +18,11 @@ import {
 } from 'lucide-react';
 import { Cobranca, StatusCobranca } from '../types';
 import { formatCurrency, formatDateBR } from '../utils/whatsapp';
+import { DEFAULT_CATEGORIAS } from '../services/storage';
 
 interface CobrancaListProps {
   cobrancas: Cobranca[];
+  categorias?: string[];
   onOpenNovaCobranca: () => void;
   onOpenGerarMensalidades?: () => void;
   onOpenWhatsAppModal: (cobranca: Cobranca) => void;
@@ -37,6 +39,7 @@ interface CobrancaListProps {
 
 export const CobrancaList: React.FC<CobrancaListProps> = ({
   cobrancas,
+  categorias = DEFAULT_CATEGORIAS,
   onOpenNovaCobranca,
   onOpenGerarMensalidades,
   onOpenWhatsAppModal,
@@ -53,6 +56,13 @@ export const CobrancaList: React.FC<CobrancaListProps> = ({
   const [filterStatus, setFilterStatus] = useState<string>('em_aberto');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('todas');
+
+  // Monta lista dinâmica de categorias para o filtro
+  const catSet = new Set<string>([...DEFAULT_CATEGORIAS, ...categorias]);
+  cobrancas.forEach(c => {
+    if (c.categoria) catSet.add(c.categoria);
+  });
+  const listaCategoriasFiltro = Array.from(catSet);
 
   const cobrancasFiltradas = cobrancas
     .filter((cob) => {
@@ -165,13 +175,11 @@ export const CobrancaList: React.FC<CobrancaListProps> = ({
             className="bg-transparent text-xs font-bold text-slate-100 focus:outline-none cursor-pointer"
           >
             <option value="todas" className="bg-slate-900 text-slate-100">Todas</option>
-            <option value="Serviços" className="bg-slate-900 text-slate-100">Serviços</option>
-            <option value="Vendas" className="bg-slate-900 text-slate-100">Vendas de Produtos</option>
-            <option value="Consultoria" className="bg-slate-900 text-slate-100">Consultoria</option>
-            <option value="Mensalidade" className="bg-slate-900 text-slate-100">Mensalidade</option>
-            <option value="Semestre" className="bg-slate-900 text-slate-100">Semestre</option>
-            <option value="Anuidade" className="bg-slate-900 text-slate-100">Anuidade</option>
-            <option value="Outros" className="bg-slate-900 text-slate-100">Outros</option>
+            {listaCategoriasFiltro.map(cat => (
+              <option key={cat} value={cat} className="bg-slate-900 text-slate-100">
+                {cat}
+              </option>
+            ))}
           </select>
         </div>
       </div>
