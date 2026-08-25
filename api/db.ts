@@ -101,15 +101,23 @@ export default async function handler(req: any, res: any) {
         categoria TEXT,
         parcela_atual INTEGER,
         total_parcelas INTEGER,
+        created_at TEXT
       );
     `;
+
+    try {
+      await sql`ALTER TABLE cobrancas ADD COLUMN IF NOT EXISTS created_at TEXT;`;
+    } catch (e) {
+      // Coluna ja existente
+    }
 
     try {
       await sql`
         UPDATE cobrancas 
         SET categoria = 'Mensalidade' 
         WHERE categoria = 'Serviços' OR LOWER(categoria) = 'serviços' OR categoria IS NULL OR categoria = '';
-
+      `;
+      await sql`
         UPDATE cobrancas 
         SET categoria = 'Implantação' 
         WHERE LOWER(categoria) = 'implantação/instalação';
