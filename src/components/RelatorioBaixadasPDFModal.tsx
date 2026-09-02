@@ -103,19 +103,21 @@ export function gerarEImprimirRelatorioPDF(
     rowsHtml = `<tr><td colspan="${colsCount}" style="padding: 15px; text-align: center; color: #64748b;">Nenhuma cobrança encontrada para este tipo de relatório.</td></tr>`;
   } else if (agruparPorCliente) {
     // Agrupamento por Cliente com Subtotais e em Ordem Alfabética (A-Z)
-    const grupos: Record<string, { clienteNome: string; documento: string; fone: string; itens: Cobranca[] }> = {};
+    const grupos: Record<string, { clienteNome: string; documento: string; fone: string; cidade: string; itens: Cobranca[] }> = {};
 
     listaFiltrada.forEach(item => {
       const key = item.clienteNome.trim().toLowerCase();
       const cli = clientes.find(c => c.id === item.clienteId || c.nome.toLowerCase() === key);
       const doc = item.clienteDocumento || cli?.documento || '-';
       const fone = item.clienteTelefone || cli?.telefone || '-';
+      const cidade = cli?.cidade || 'PACAJÁ';
 
       if (!grupos[key]) {
         grupos[key] = {
           clienteNome: item.clienteNome.trim(),
           documento: doc,
           fone: fone,
+          cidade: cidade,
           itens: []
         };
       }
@@ -137,7 +139,7 @@ export function gerarEImprimirRelatorioPDF(
       const headerRow = `
         <tr style="background: #e0e7ff; color: #3730a3; font-weight: 900; font-size: 10px; page-break-after: avoid; break-after: avoid;">
           <td colspan="${colsCount}" style="padding: 6px 8px; border: 1px solid #c7d2fe; text-transform: uppercase; letter-spacing: 0.5px;">
-            👤 CLIENTE: <strong>${grupo.clienteNome}</strong> &nbsp;&bull;&nbsp; CPF/CNPJ: <strong>${grupo.documento}</strong> &nbsp;&bull;&nbsp; FONE: <strong>${grupo.fone}</strong>
+            👤 CLIENTE: <strong>${grupo.clienteNome}</strong> &nbsp;&bull;&nbsp; CPF/CNPJ: <strong>${grupo.documento}</strong> &nbsp;&bull;&nbsp; CIDADE: <strong>${grupo.cidade}</strong> &nbsp;&bull;&nbsp; FONE: <strong>${grupo.fone}</strong>
           </td>
         </tr>
       `;
@@ -191,8 +193,9 @@ export function gerarEImprimirRelatorioPDF(
   } else {
     // Lista plana sequencial em Ordem Alfabética (A-Z)
     rowsHtml = listaFiltrada.map((item, idx) => {
-      const cli = clientes.find(c => c.id === item.clienteId || c.nome === item.clienteNome);
+      const cli = clientes.find(c => c.id === item.clienteId || c.nome.toLowerCase() === item.clienteNome.trim().toLowerCase());
       const doc = item.clienteDocumento || cli?.documento || '-';
+      const city = cli?.cidade || 'PACAJÁ';
       const mesRefFinal = item.mesReferencia || (item.dataVencimento ? `${item.dataVencimento.split('-')[1]}/${item.dataVencimento.split('-')[0]}` : '-');
       
       let statusBadgeHtml = '';
@@ -212,7 +215,7 @@ export function gerarEImprimirRelatorioPDF(
       return `
         <tr style="background-color: ${rowBg}; font-size: 9px; page-break-inside: avoid; break-inside: avoid;">
           <td style="padding: 3.5px 5px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold; color: #64748b; white-space: nowrap;">${idx + 1}</td>
-          <td style="padding: 3.5px 5px; border: 1px solid #cbd5e1; font-weight: bold; color: #0f172a; word-break: break-word;">${item.clienteNome}</td>
+          <td style="padding: 3.5px 5px; border: 1px solid #cbd5e1; font-weight: bold; color: #0f172a; word-break: break-word;">${item.clienteNome} <span style="font-size: 8px; font-weight: normal; color: #64748b;">(${city})</span></td>
           <td style="padding: 3.5px 5px; border: 1px solid #cbd5e1; font-family: monospace; font-size: 8.5px; color: #475569; white-space: nowrap;">${doc}</td>
           <td style="padding: 3.5px 5px; border: 1px solid #cbd5e1; text-align: center; font-weight: 800; color: #4338ca; font-size: 9px; white-space: nowrap;">${mesRefFinal}</td>
           <td style="padding: 3.5px 5px; border: 1px solid #cbd5e1; text-align: center; color: #475569; font-weight: 600; white-space: nowrap;">${formatDateBR(item.dataVencimento)}</td>

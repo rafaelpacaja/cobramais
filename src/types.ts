@@ -22,6 +22,7 @@ export interface Cliente {
   telefone: string;
   email?: string;
   documento?: string; // CPF ou CNPJ
+  cidade?: string;
   observacoes?: string;
   createdAt: string;
 }

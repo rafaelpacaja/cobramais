@@ -93,6 +93,7 @@ export const App: React.FC = () => {
         ...cli,
         nome: nomeLimpo,
         telefone: tel,
+        cidade: cli.cidade || 'PACAJÁ',
         observacoes: cli.observacoes || 'Mensalidade do Sistema Compuserve'
       };
     });
@@ -601,6 +602,7 @@ export const App: React.FC = () => {
         {activeTab === 'relatorios' && (
           <RelatoriosView
             cobrancas={cobrancas}
+            clientes={clientes}
             indicadores={indicadores}
             onOpenRelatorioPDF={(tipo = 'quitadas', cobrancasFiltradas, subtitulo) => {
               setTipoRelatorioPDF(tipo);

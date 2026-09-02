@@ -78,10 +78,17 @@ export default async function handler(req: any, res: any) {
         telefone TEXT,
         email TEXT,
         documento TEXT,
+        cidade TEXT DEFAULT 'PACAJÁ',
         observacoes TEXT,
         created_at TEXT
       );
     `;
+
+    try {
+      await sql`ALTER TABLE clientes ADD COLUMN IF NOT EXISTS cidade TEXT DEFAULT 'PACAJÁ';`;
+    } catch (e) {
+      // Coluna ja existente
+    }
 
     await sql`
       CREATE TABLE IF NOT EXISTS cobrancas (
@@ -147,6 +154,7 @@ export default async function handler(req: any, res: any) {
         telefone: c.telefone || '',
         email: c.email || '',
         documento: c.documento || '',
+        cidade: c.cidade || 'PACAJÁ',
         observacoes: c.observacoes || '',
         createdAt: c.created_at
       }));
@@ -340,13 +348,14 @@ export default async function handler(req: any, res: any) {
 
         for (const cli of clientes) {
           await sql`
-            INSERT INTO clientes (id, nome, telefone, email, documento, observacoes, created_at)
-            VALUES (${cli.id}, ${cli.nome}, ${cli.telefone || ''}, ${cli.email || ''}, ${cli.documento || ''}, ${cli.observacoes || ''}, ${cli.createdAt || new Date().toISOString()})
+            INSERT INTO clientes (id, nome, telefone, email, documento, cidade, observacoes, created_at)
+            VALUES (${cli.id}, ${cli.nome}, ${cli.telefone || ''}, ${cli.email || ''}, ${cli.documento || ''}, ${cli.cidade || 'PACAJÁ'}, ${cli.observacoes || ''}, ${cli.createdAt || new Date().toISOString()})
             ON CONFLICT (id) DO UPDATE SET
               nome = EXCLUDED.nome,
               telefone = EXCLUDED.telefone,
               email = EXCLUDED.email,
               documento = EXCLUDED.documento,
+              cidade = EXCLUDED.cidade,
               observacoes = EXCLUDED.observacoes;
           `;
         }

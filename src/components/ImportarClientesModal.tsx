@@ -13,6 +13,7 @@ interface ItemPreview {
   nome: string;
   telefone: string;
   documento?: string;
+  cidade?: string;
   valor?: number;
   dataVencimento?: string;
   descricao?: string;
@@ -44,6 +45,7 @@ export const ImportarClientesModal: React.FC<ImportarClientesModalProps> = ({
     const idxNome = headers.findIndex(h => h.includes('nome') || h.includes('cliente') || h.includes('razao') || h.includes('devedor'));
     const idxTelefone = headers.findIndex(h => h.includes('tel') || h.includes('whats') || h.includes('cel') || h.includes('fone') || h.includes('contato'));
     const idxDoc = headers.findIndex(h => h.includes('cpf') || h.includes('cnpj') || h.includes('doc'));
+    const idxCidade = headers.findIndex(h => h.includes('cidade') || h.includes('municipio'));
     const idxValor = headers.findIndex(h => h.includes('valor') || h.includes('quantia') || h.includes('debito') || h.includes('total'));
     const idxVenc = headers.findIndex(h => h.includes('venc') || h.includes('data'));
     const idxDesc = headers.findIndex(h => h.includes('desc') || h.includes('servico') || h.includes('obs'));
@@ -57,6 +59,7 @@ export const ImportarClientesModal: React.FC<ImportarClientesModalProps> = ({
       const nome = idxNome !== -1 ? row[idxNome] : row[0] || '';
       const telefone = idxTelefone !== -1 ? row[idxTelefone] : row[1] || '';
       const documento = idxDoc !== -1 ? row[idxDoc] : row[2] || '';
+      const cidade = idxCidade !== -1 ? row[idxCidade] : 'PACAJÁ';
       const valorStr = idxValor !== -1 ? row[idxValor] : '';
       const vencStr = idxVenc !== -1 ? row[idxVenc] : '';
       const descStr = idxDesc !== -1 ? row[idxDesc] : '';
@@ -91,6 +94,7 @@ export const ImportarClientesModal: React.FC<ImportarClientesModalProps> = ({
         nome: nome || 'Sem Nome',
         telefone: telefone || '(00) 00000-0000',
         documento: documento || undefined,
+        cidade: cidade || 'PACAJÁ',
         valor: valorNum,
         dataVencimento: dataVenc || defaultVenc05,
         descricao: descStr || (valorNum ? 'Mensalidade do Sistema Compuserve' : undefined),
@@ -144,6 +148,7 @@ export const ImportarClientesModal: React.FC<ImportarClientesModalProps> = ({
         nome: item.nome,
         telefone: item.telefone,
         documento: item.documento,
+        cidade: item.cidade || 'PACAJÁ',
         observacoes: 'Mensalidade do Sistema Compuserve'
       });
 

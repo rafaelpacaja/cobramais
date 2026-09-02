@@ -13,9 +13,10 @@ import {
   CalendarDays,
   Receipt,
   Tag,
-  Check
+  Check,
+  MapPin
 } from 'lucide-react';
-import { Cobranca, IndicadoresFinanceiros } from '../types';
+import { Cliente, Cobranca, IndicadoresFinanceiros } from '../types';
 import { formatCurrency, formatDateBR } from '../utils/whatsapp';
 import { TipoRelatorioPDF } from './RelatorioBaixadasPDFModal';
 
@@ -23,6 +24,7 @@ export type TipoFiltroPeriodo = 'todos' | 'mes_atual' | 'mes_especifico' | 'pers
 
 interface RelatoriosViewProps {
   cobrancas: Cobranca[];
+  clientes?: Cliente[];
   indicadores: IndicadoresFinanceiros;
   onOpenRelatorioPDF: (tipo?: TipoRelatorioPDF, cobrancasFiltradas?: Cobranca[], subtituloPeriodo?: string) => void;
   onOpenReciboAvulso?: () => void;
@@ -30,17 +32,48 @@ interface RelatoriosViewProps {
 
 export const RelatoriosView: React.FC<RelatoriosViewProps> = ({ 
   cobrancas, 
+  clientes = [],
   indicadores: indicadoresGlobais,
   onOpenRelatorioPDF,
   onOpenReciboAvulso
 }) => {
   const [tipoFiltro, setTipoFiltro] = useState<TipoFiltroPeriodo>('todos');
   const [selectedCategorias, setSelectedCategorias] = useState<string[]>([]);
+  const [selectedCidade, setSelectedCidade] = useState<string>('');
+
+  // Mapeia clienteId e clienteNome para cidade
+  const clienteCidadeMap = useMemo(() => {
+    const map = new Map<string, string>();
+    clientes.forEach(c => {
+      const city = (c.cidade || 'PACAJÁ').trim();
+      if (c.id) map.set(c.id, city);
+      if (c.nome) map.set(c.nome.trim().toLowerCase(), city);
+    });
+    return map;
+  }, [clientes]);
 
   // Mês Atual Automático (ex: "08/2026")
   const now = new Date();
   const currentMesRef = `${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
   const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+  // Extrai lista única de Cidades disponíveis nos clientes/cobranças
+  const cidadesDisponiveis = useMemo(() => {
+    const setCidades = new Set<string>();
+    clientes.forEach(c => {
+      if (c.cidade && c.cidade.trim()) {
+        setCidades.add(c.cidade.trim());
+      } else {
+        setCidades.add('PACAJÁ');
+      }
+    });
+    cobrancas.forEach(c => {
+      const city = clienteCidadeMap.get(c.clienteId) || clienteCidadeMap.get(c.clienteNome.trim().toLowerCase()) || 'PACAJÁ';
+      setCidades.add(city);
+    });
+    if (setCidades.size === 0) setCidades.add('PACAJÁ');
+    return Array.from(setCidades).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  }, [clientes, cobrancas, clienteCidadeMap]);
 
   // Extrai lista única de Categorias disponíveis nas cobranças
   const categoriasDisponiveis = useMemo(() => {
@@ -86,7 +119,15 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
         if (!match) return false;
       }
 
-      // 2. Filtro de Período
+      // 2. Filtro de Cidade
+      if (selectedCidade) {
+        const cliCity = clienteCidadeMap.get(c.clienteId) || clienteCidadeMap.get(c.clienteNome.trim().toLowerCase()) || 'PACAJÁ';
+        if (cliCity.toLowerCase() !== selectedCidade.toLowerCase()) {
+          return false;
+        }
+      }
+
+      // 3. Filtro de Período
       if (tipoFiltro === 'todos') return true;
 
       if (tipoFiltro === 'mes_atual') {
@@ -113,7 +154,7 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
     return list.sort((a, b) => 
       a.clienteNome.trim().localeCompare(b.clienteNome.trim(), 'pt-BR', { sensitivity: 'base' })
     );
-  }, [cobrancas, selectedCategorias, tipoFiltro, mesEspecificoSel, dataInicio, dataFim, currentMesRef, currentYearMonth]);
+  }, [cobrancas, selectedCategorias, selectedCidade, clienteCidadeMap, tipoFiltro, mesEspecificoSel, dataInicio, dataFim, currentMesRef, currentYearMonth]);
 
   // Recalcula indicadores para o período filtrado
   const totalRecebido = cobrancasFiltradas.filter(c => c.status === 'pago').reduce((a, c) => a + c.valor, 0);
@@ -129,7 +170,7 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
       return acc;
     }, {} as Record<string, number>);
 
-  // Monta subtítulo descritivo do período e categorias para o PDF e CSV
+  // Monta subtítulo descritivo do período, categorias e cidade para o PDF e CSV
   const subtituloPeriodoStr = useMemo(() => {
     let periodStr = '';
     if (tipoFiltro === 'todos') periodStr = 'Período: Geral (Todos os registros)';
@@ -150,8 +191,10 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
       catStr = 'Todas as Categorias';
     }
 
-    return `${periodStr} | ${catStr}`;
-  }, [tipoFiltro, currentMesRef, mesEspecificoSel, dataInicio, dataFim, selectedCategorias]);
+    let cidStr = selectedCidade ? `Cidade: ${selectedCidade}` : 'Todas as Cidades';
+
+    return `${periodStr} | ${catStr} | ${cidStr}`;
+  }, [tipoFiltro, currentMesRef, mesEspecificoSel, dataInicio, dataFim, selectedCategorias, selectedCidade]);
 
   const handleExportCSV = () => {
     if (cobrancasFiltradas.length === 0) {
@@ -159,20 +202,24 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
       return;
     }
 
-    const headers = ['ID', 'Cliente', 'Telefone', 'CPF_CNPJ', 'Descricao', 'Valor', 'Vencimento', 'Pagamento', 'Status', 'FormaPgto', 'Categoria'];
-    const rows = cobrancasFiltradas.map(c => [
-      c.id,
-      `"${c.clienteNome}"`,
-      `"${c.clienteTelefone}"`,
-      `"${c.clienteDocumento || ''}"`,
-      `"${c.descricao}"`,
-      c.valor,
-      c.dataVencimento,
-      c.dataPagamento || '',
-      c.status,
-      c.formaPagamento,
-      c.categoria || ''
-    ]);
+    const headers = ['ID', 'Cliente', 'Cidade', 'Telefone', 'CPF_CNPJ', 'Descricao', 'Valor', 'Vencimento', 'Pagamento', 'Status', 'FormaPgto', 'Categoria'];
+    const rows = cobrancasFiltradas.map(c => {
+      const city = clienteCidadeMap.get(c.clienteId) || clienteCidadeMap.get(c.clienteNome.trim().toLowerCase()) || 'PACAJÁ';
+      return [
+        c.id,
+        `"${c.clienteNome}"`,
+        `"${city}"`,
+        `"${c.clienteTelefone}"`,
+        `"${c.clienteDocumento || ''}"`,
+        `"${c.descricao}"`,
+        c.valor,
+        c.dataVencimento,
+        c.dataPagamento || '',
+        c.status,
+        c.formaPagamento,
+        c.categoria || ''
+      ];
+    });
 
     const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     const encodedUri = encodeURI(csvContent);
@@ -414,7 +461,69 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
           </div>
         </div>
 
-        {/* Rótulo Informativo do Período e Categorias */}
+        {/* Filtro por Cidade */}
+        <div className="pt-3 border-t border-slate-800/80 space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-extrabold text-slate-200 flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Filtrar por Cidade:</span>
+            </label>
+
+            {selectedCidade && (
+              <button
+                type="button"
+                onClick={() => setSelectedCidade('')}
+                className="text-[11px] font-extrabold text-indigo-400 hover:underline cursor-pointer"
+              >
+                Limpar filtro (Todas)
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              onClick={() => setSelectedCidade('')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-extrabold border transition-all cursor-pointer ${
+                !selectedCidade
+                  ? 'bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-900/40'
+                  : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+              }`}
+            >
+              Todas as Cidades
+            </button>
+
+            {cidadesDisponiveis.map(cidade => {
+              const isSelected = selectedCidade.toLowerCase() === cidade.toLowerCase();
+              const countCidade = cobrancas.filter(c => {
+                const cliCity = clienteCidadeMap.get(c.clienteId) || clienteCidadeMap.get(c.clienteNome.trim().toLowerCase()) || 'PACAJÁ';
+                return cliCity.toLowerCase() === cidade.toLowerCase();
+              }).length;
+
+              return (
+                <button
+                  key={cidade}
+                  type="button"
+                  onClick={() => setSelectedCidade(isSelected ? '' : cidade)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer ${
+                    isSelected
+                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 border-indigo-400 text-white shadow-md shadow-indigo-900/40'
+                      : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
+                  }`}
+                >
+                  <span>{cidade}</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-extrabold ${
+                    isSelected ? 'bg-indigo-900/60 text-indigo-200' : 'bg-slate-900 text-slate-400'
+                  }`}>
+                    {countCidade}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Rótulo Informativo do Período, Categorias e Cidade */}
         <p className="text-[11px] font-bold text-slate-400 italic">
           📌 {subtituloPeriodoStr}
         </p>

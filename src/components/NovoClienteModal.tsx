@@ -49,6 +49,7 @@ export const NovoClienteModal: React.FC<NovoClienteModalProps> = ({
   const [telefone, setTelefone] = useState('');
   const [email, setEmail] = useState('');
   const [documento, setDocumento] = useState('');
+  const [cidade, setCidade] = useState('PACAJÁ');
   const [observacoes, setObservacoes] = useState('');
 
   const handleDocumentoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,6 +80,7 @@ export const NovoClienteModal: React.FC<NovoClienteModalProps> = ({
       telefone: telefone.trim(),
       email: email.trim() || undefined,
       documento: documento.trim() || undefined,
+      cidade: cidade.trim() || 'PACAJÁ',
       observacoes: observacoes.trim() || undefined
     });
 
@@ -87,6 +89,7 @@ export const NovoClienteModal: React.FC<NovoClienteModalProps> = ({
     setTelefone('');
     setEmail('');
     setDocumento('');
+    setCidade('PACAJÁ');
     setObservacoes('');
 
     onClose();
@@ -164,6 +167,19 @@ export const NovoClienteModal: React.FC<NovoClienteModalProps> = ({
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:border-indigo-500 font-medium"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1">
+              Cidade
+            </label>
+            <input
+              type="text"
+              value={cidade}
+              onChange={(e) => setCidade(e.target.value)}
+              placeholder="Ex: PACAJÁ"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:border-indigo-500 font-medium"
+            />
           </div>
 
           <div>

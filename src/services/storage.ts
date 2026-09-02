@@ -88,6 +88,7 @@ const seedClientes: Cliente[] = [
     telefone: '(11) 98765-4321',
     email: 'carlos.silva@email.com',
     documento: '123.456.789-00',
+    cidade: 'PACAJÁ',
     observacoes: 'Mensalidade do Sistema Compuserve',
     createdAt: '2026-07-01T10:00:00.000Z'
   },
@@ -97,6 +98,7 @@ const seedClientes: Cliente[] = [
     telefone: '(21) 99887-6655',
     email: 'mariana.santos@email.com',
     documento: '987.654.321-11',
+    cidade: 'PACAJÁ',
     observacoes: 'Mensalidade do Sistema Compuserve',
     createdAt: '2026-07-15T14:30:00.000Z'
   }
@@ -218,7 +220,11 @@ export function getClientes(): Cliente[] {
       localStorage.setItem(CLIENTES_STORAGE_KEY, JSON.stringify(seedClientes));
       return seedClientes;
     }
-    return JSON.parse(data);
+    const parsed: Cliente[] = JSON.parse(data);
+    return parsed.map(c => ({
+      ...c,
+      cidade: c.cidade || 'PACAJÁ'
+    }));
   } catch (err) {
     console.error('Erro ao ler clientes do LocalStorage:', err);
     return seedClientes;

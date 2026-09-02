@@ -8,7 +8,8 @@ import {
   MessageSquare,
   AlertCircle,
   FileSpreadsheet,
-  Pencil
+  Pencil,
+  MapPin
 } from 'lucide-react';
 import { Cliente, Cobranca } from '../types';
 import { formatCurrency, formatPhoneForWhatsApp } from '../utils/whatsapp';
@@ -40,7 +41,8 @@ export const ClienteList: React.FC<ClienteListProps> = ({
     .filter(c => 
       c.nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.telefone.includes(searchQuery) ||
-      (c.documento && c.documento.includes(searchQuery))
+      (c.documento && c.documento.includes(searchQuery)) ||
+      (c.cidade && c.cidade.toLowerCase().includes(searchQuery.toLowerCase()))
     )
     .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' }));
 
@@ -148,6 +150,10 @@ export const ClienteList: React.FC<ClienteListProps> = ({
                             ({cliente.documento})
                           </span>
                         )}
+                        <span className="text-[10px] text-slate-400 shrink-0 flex items-center gap-0.5 ml-1">
+                          <MapPin className="w-2.5 h-2.5 text-indigo-400 shrink-0" />
+                          {cliente.cidade || 'PACAJÁ'}
+                        </span>
                       </p>
                     </div>
                   </div>
