@@ -110,6 +110,11 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
   const [dataInicio, setDataInicio] = useState<string>(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`);
   const [dataFim, setDataFim] = useState<string>(now.toISOString().split('T')[0]);
 
+  // Validação: Data Inicial não pode ser maior que Data Final no modo Personalizado
+  const isPeriodoInvalido = useMemo(() => {
+    return tipoFiltro === 'personalizado' && Boolean(dataInicio && dataFim && dataInicio > dataFim);
+  }, [tipoFiltro, dataInicio, dataFim]);
+
   const cobrancasFiltradas = useMemo(() => {
     const list = cobrancas.filter(c => {
       // 1. Filtro de Categorias (Multi-Seleção)
@@ -141,6 +146,7 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
       }
 
       if (tipoFiltro === 'personalizado') {
+        if (isPeriodoInvalido) return false;
         const dataTarget = c.dataPagamento || c.dataVencimento;
         if (dataInicio && dataTarget < dataInicio) return false;
         if (dataFim && dataTarget > dataFim) return false;
@@ -153,7 +159,7 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
     return list.sort((a, b) => 
       a.clienteNome.trim().localeCompare(b.clienteNome.trim(), 'pt-BR', { sensitivity: 'base' })
     );
-  }, [cobrancas, selectedCategorias, selectedCidades, clienteCidadeMap, tipoFiltro, mesEspecificoSel, dataInicio, dataFim, currentMesRef, currentYearMonth]);
+  }, [cobrancas, selectedCategorias, selectedCidades, clienteCidadeMap, tipoFiltro, mesEspecificoSel, dataInicio, dataFim, isPeriodoInvalido, currentMesRef, currentYearMonth]);
 
   // Recalcula indicadores para o período filtrado
   const totalRecebido = cobrancasFiltradas.filter(c => c.status === 'pago').reduce((a, c) => a + c.valor, 0);
@@ -178,7 +184,11 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
     else if (tipoFiltro === 'personalizado') {
       const iniBR = dataInicio ? formatDateBR(dataInicio) : 'Início';
       const fimBR = dataFim ? formatDateBR(dataFim) : 'Hoje';
-      periodStr = `Período: De ${iniBR} até ${fimBR}`;
+      if (isPeriodoInvalido) {
+        periodStr = `⚠️ Período Inválido (${iniBR} até ${fimBR})`;
+      } else {
+        periodStr = `Período: De ${iniBR} até ${fimBR}`;
+      }
     }
 
     let catStr = '';
@@ -200,9 +210,14 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
     }
 
     return `${periodStr} | ${catStr} | ${cidStr}`;
-  }, [tipoFiltro, currentMesRef, mesEspecificoSel, dataInicio, dataFim, selectedCategorias, selectedCidades]);
+  }, [tipoFiltro, currentMesRef, mesEspecificoSel, dataInicio, dataFim, isPeriodoInvalido, selectedCategorias, selectedCidades]);
 
   const handleExportCSV = () => {
+    if (isPeriodoInvalido) {
+      alert('Período Inválido! A Data Inicial não pode ser posterior à Data Final. Por favor, ajuste o intervalo de datas.');
+      return;
+    }
+
     if (cobrancasFiltradas.length === 0) {
       alert('Nenhuma cobrança encontrada no período selecionado para exportar.');
       return;
@@ -238,6 +253,10 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
   };
 
   const handleOpenPDF = () => {
+    if (isPeriodoInvalido) {
+      alert('Período Inválido! A Data Inicial não pode ser posterior à Data Final. Por favor, ajuste o intervalo de datas.');
+      return;
+    }
     onOpenRelatorioPDF('quitadas', cobrancasFiltradas, subtituloPeriodoStr);
   };
 
@@ -375,29 +394,48 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
         )}
 
         {tipoFiltro === 'personalizado' && (
-          <div className="grid grid-cols-2 gap-2 pt-2 animate-fade-in">
-            <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1">
-                Data Inicial:
-              </label>
-              <input
-                type="date"
-                value={dataInicio}
-                onChange={(e) => setDataInicio(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-100 focus:border-purple-500"
-              />
+          <div className="space-y-2 pt-2 animate-fade-in">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  Data Inicial:
+                </label>
+                <input
+                  type="date"
+                  value={dataInicio}
+                  onChange={(e) => setDataInicio(e.target.value)}
+                  className={`w-full bg-slate-950 border rounded-xl px-3 py-2 text-xs font-bold transition-all ${
+                    isPeriodoInvalido
+                      ? 'border-rose-500 text-rose-300 bg-rose-950/20 focus:border-rose-400 focus:outline-none'
+                      : 'border-slate-800 text-slate-100 focus:border-purple-500'
+                  }`}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  Data Final:
+                </label>
+                <input
+                  type="date"
+                  value={dataFim}
+                  onChange={(e) => setDataFim(e.target.value)}
+                  className={`w-full bg-slate-950 border rounded-xl px-3 py-2 text-xs font-bold transition-all ${
+                    isPeriodoInvalido
+                      ? 'border-rose-500 text-rose-300 bg-rose-950/20 focus:border-rose-400 focus:outline-none'
+                      : 'border-slate-800 text-slate-100 focus:border-purple-500'
+                  }`}
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1">
-                Data Final:
-              </label>
-              <input
-                type="date"
-                value={dataFim}
-                onChange={(e) => setDataFim(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-100 focus:border-purple-500"
-              />
-            </div>
+
+            {isPeriodoInvalido && (
+              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-extrabold animate-shake">
+                <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                <span>
+                  Período Inválido: A Data Inicial ({formatDateBR(dataInicio)}) não pode ser posterior à Data Final ({formatDateBR(dataFim)}).
+                </span>
+              </div>
+            )}
           </div>
         )}
         {/* Filtro por Categorias (Multi-Seleção) */}
@@ -539,7 +577,7 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
         </div>
 
         {/* Rótulo Informativo do Período, Categorias e Cidade */}
-        <p className="text-[11px] font-bold text-slate-400 italic">
+        <p className={`text-[11px] font-bold italic ${isPeriodoInvalido ? 'text-rose-400 font-extrabold' : 'text-slate-400'}`}>
           📌 {subtituloPeriodoStr}
         </p>
       </div>
