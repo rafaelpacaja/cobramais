@@ -39,7 +39,7 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
 }) => {
   const [tipoFiltro, setTipoFiltro] = useState<TipoFiltroPeriodo>('todos');
   const [selectedCategorias, setSelectedCategorias] = useState<string[]>([]);
-  const [selectedCidade, setSelectedCidade] = useState<string>('');
+  const [selectedCidades, setSelectedCidades] = useState<string[]>([]);
 
   // Mapeia clienteId e clienteNome para cidade
   const clienteCidadeMap = useMemo(() => {
@@ -119,12 +119,11 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
         if (!match) return false;
       }
 
-      // 2. Filtro de Cidade
-      if (selectedCidade) {
-        const cliCity = clienteCidadeMap.get(c.clienteId) || clienteCidadeMap.get(c.clienteNome.trim().toLowerCase()) || 'PACAJÁ';
-        if (cliCity.toLowerCase() !== selectedCidade.toLowerCase()) {
-          return false;
-        }
+      // 2. Filtro de Cidade (Multi-Seleção)
+      if (selectedCidades.length > 0) {
+        const cliCity = (clienteCidadeMap.get(c.clienteId) || clienteCidadeMap.get(c.clienteNome.trim().toLowerCase()) || 'PACAJÁ').trim().toLowerCase();
+        const match = selectedCidades.some(sc => sc.trim().toLowerCase() === cliCity);
+        if (!match) return false;
       }
 
       // 3. Filtro de Período
@@ -154,7 +153,7 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
     return list.sort((a, b) => 
       a.clienteNome.trim().localeCompare(b.clienteNome.trim(), 'pt-BR', { sensitivity: 'base' })
     );
-  }, [cobrancas, selectedCategorias, selectedCidade, clienteCidadeMap, tipoFiltro, mesEspecificoSel, dataInicio, dataFim, currentMesRef, currentYearMonth]);
+  }, [cobrancas, selectedCategorias, selectedCidades, clienteCidadeMap, tipoFiltro, mesEspecificoSel, dataInicio, dataFim, currentMesRef, currentYearMonth]);
 
   // Recalcula indicadores para o período filtrado
   const totalRecebido = cobrancasFiltradas.filter(c => c.status === 'pago').reduce((a, c) => a + c.valor, 0);
@@ -191,10 +190,17 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
       catStr = 'Todas as Categorias';
     }
 
-    let cidStr = selectedCidade ? `Cidade: ${selectedCidade}` : 'Todas as Cidades';
+    let cidStr = '';
+    if (selectedCidades.length === 1) {
+      cidStr = `Cidade: ${selectedCidades[0]}`;
+    } else if (selectedCidades.length > 1) {
+      cidStr = `Cidades: ${selectedCidades.join(', ')}`;
+    } else {
+      cidStr = 'Todas as Cidades';
+    }
 
     return `${periodStr} | ${catStr} | ${cidStr}`;
-  }, [tipoFiltro, currentMesRef, mesEspecificoSel, dataInicio, dataFim, selectedCategorias, selectedCidade]);
+  }, [tipoFiltro, currentMesRef, mesEspecificoSel, dataInicio, dataFim, selectedCategorias, selectedCidades]);
 
   const handleExportCSV = () => {
     if (cobrancasFiltradas.length === 0) {
@@ -461,31 +467,32 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
           </div>
         </div>
 
-        {/* Filtro por Cidade */}
+        {/* Filtro por Cidade (Multi-Seleção) */}
         <div className="pt-3 border-t border-slate-800/80 space-y-2">
           <div className="flex items-center justify-between">
             <label className="text-xs font-extrabold text-slate-200 flex items-center gap-1.5">
               <MapPin className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Filtrar por Cidade:</span>
+              <span>Filtrar por Cidade(s):</span>
             </label>
 
-            {selectedCidade && (
+            {selectedCidades.length > 0 && (
               <button
                 type="button"
-                onClick={() => setSelectedCidade('')}
+                onClick={() => setSelectedCidades([])}
                 className="text-[11px] font-extrabold text-indigo-400 hover:underline cursor-pointer"
               >
-                Limpar filtro (Todas)
+                Limpar seleção (Todas)
               </button>
             )}
           </div>
 
           <div className="flex flex-wrap gap-1.5">
+            {/* Botão "Todas as Cidades" */}
             <button
               type="button"
-              onClick={() => setSelectedCidade('')}
+              onClick={() => setSelectedCidades([])}
               className={`px-3 py-1.5 rounded-xl text-xs font-extrabold border transition-all cursor-pointer ${
-                !selectedCidade
+                selectedCidades.length === 0
                   ? 'bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-900/40'
                   : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
               }`}
@@ -493,18 +500,26 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
               Todas as Cidades
             </button>
 
+            {/* Pills para cada Cidade */}
             {cidadesDisponiveis.map(cidade => {
-              const isSelected = selectedCidade.toLowerCase() === cidade.toLowerCase();
               const countCidade = cobrancas.filter(c => {
                 const cliCity = clienteCidadeMap.get(c.clienteId) || clienteCidadeMap.get(c.clienteNome.trim().toLowerCase()) || 'PACAJÁ';
-                return cliCity.toLowerCase() === cidade.toLowerCase();
+                return cliCity.trim().toLowerCase() === cidade.trim().toLowerCase();
               }).length;
+
+              const isSelected = selectedCidades.some(sc => sc.trim().toLowerCase() === cidade.trim().toLowerCase());
 
               return (
                 <button
                   key={cidade}
                   type="button"
-                  onClick={() => setSelectedCidade(isSelected ? '' : cidade)}
+                  onClick={() => {
+                    if (isSelected) {
+                      setSelectedCidades(selectedCidades.filter(c => c.trim().toLowerCase() !== cidade.trim().toLowerCase()));
+                    } else {
+                      setSelectedCidades([...selectedCidades, cidade]);
+                    }
+                  }}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer ${
                     isSelected
                       ? 'bg-gradient-to-r from-indigo-600 to-purple-600 border-indigo-400 text-white shadow-md shadow-indigo-900/40'
