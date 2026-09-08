@@ -337,15 +337,8 @@ export default async function handler(req: any, res: any) {
         `;
       }
 
-      // Sincroniza Clientes
+      // Sincroniza Clientes (Upsert)
       if (Array.isArray(clientes)) {
-        const currentCliIds = clientes.map(c => c.id).filter(Boolean);
-        if (currentCliIds.length > 0) {
-          await sql`DELETE FROM clientes WHERE NOT (id = ANY(${currentCliIds}));`;
-        } else {
-          await sql`DELETE FROM clientes;`;
-        }
-
         for (const cli of clientes) {
           await sql`
             INSERT INTO clientes (id, nome, telefone, email, documento, cidade, observacoes, created_at)
@@ -361,15 +354,8 @@ export default async function handler(req: any, res: any) {
         }
       }
 
-      // Sincroniza Cobranças
+      // Sincroniza Cobranças (Upsert)
       if (Array.isArray(cobrancas)) {
-        const currentCobIds = cobrancas.map(c => c.id).filter(Boolean);
-        if (currentCobIds.length > 0) {
-          await sql`DELETE FROM cobrancas WHERE NOT (id = ANY(${currentCobIds}));`;
-        } else {
-          await sql`DELETE FROM cobrancas;`;
-        }
-
         for (const cob of cobrancas) {
           await sql`
             INSERT INTO cobrancas (
