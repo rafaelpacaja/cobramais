@@ -34,62 +34,110 @@ export function formatCurrency(value: number): string {
 }
 
 export function generateWhatsAppMessage(
-  cobranca: Cobranca, 
+  cobrancaInput: Cobranca | Cobranca[], 
   template: WhatsAppTemplateType,
   nomeEmpresa: string = 'COMPUSERVE LTDA',
   chavePixPadrao: string = '60.060.102/0001-24',
   cnpjEmpresa: string = '60.060.102/0001-24'
 ): string {
-  // Nome completo do cliente para a saudação
-  const nomeCliente = cobranca.clienteNome.trim();
-  const valorFormatado = formatCurrency(cobranca.valor);
-  
-  // Mês de referência e data de vencimento garantida dia 05
-  const mesRef = cobranca.mesReferencia || (cobranca.dataVencimento ? `${cobranca.dataVencimento.split('-')[1]}/${cobranca.dataVencimento.split('-')[0]}` : '');
-  
-  let dataVencimentoBR = formatDateBR(cobranca.dataVencimento);
-  if (mesRef && mesRef.includes('/') && mesRef.length === 7) {
-    dataVencimentoBR = `05/${mesRef}`;
-  }
+  const cobrancas = Array.isArray(cobrancaInput) ? cobrancaInput : [cobrancaInput];
+  if (cobrancas.length === 0) return '';
 
-  // Converte a data exibida (05/MM/AAAA) em formato ISO para comparar com a data atual
-  const parts = dataVencimentoBR.split('/');
-  const isoVencEfetivo = parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : parseDateToISO(cobranca.dataVencimento);
-  const todayStr = getTodayString();
+  const primeira = cobrancas[0];
+  const nomeCliente = primeira.clienteNome.trim();
+  const cnpjEmpresaFormat = formatCNPJ(cnpjEmpresa || '60.060.102/0001-24');
 
-  const verboVencer = isoVencEfetivo < todayStr ? 'venceu em' : 'vence em';
-
-  let rawPix = cobranca.chavePix || chavePixPadrao || '60.060.102/0001-24';
+  let rawPix = primeira.chavePix || chavePixPadrao || '60.060.102/0001-24';
   if (rawPix.replace(/\D/g, '').length === 14) {
     rawPix = formatCNPJ(rawPix);
   }
   const chavePix = rawPix;
-  const cnpjEmpresaFormat = formatCNPJ(cnpjEmpresa || '60.060.102/0001-24');
 
   const EMOJI_SMILE = '\uD83D\uDE0A'; // 😊
   const EMOJI_BELL = '\uD83D\uDD14';  // 🔔
   const EMOJI_MONEY = '\uD83D\uDCB8'; // 💸
 
+  // Se for apenas 1 cobrança
+  if (cobrancas.length === 1) {
+    const cobranca = primeira;
+    const valorFormatado = formatCurrency(cobranca.valor);
+    const mesRef = cobranca.mesReferencia || (cobranca.dataVencimento ? `${cobranca.dataVencimento.split('-')[1]}/${cobranca.dataVencimento.split('-')[0]}` : '');
+    
+    let dataVencimentoBR = formatDateBR(cobranca.dataVencimento);
+    if (mesRef && mesRef.includes('/') && mesRef.length === 7) {
+      dataVencimentoBR = `05/${mesRef}`;
+    }
+
+    const parts = dataVencimentoBR.split('/');
+    const isoVencEfetivo = parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : parseDateToISO(cobranca.dataVencimento);
+    const todayStr = getTodayString();
+    const verboVencer = isoVencEfetivo < todayStr ? 'venceu em' : 'vence em';
+
+    switch (template) {
+      case 'lembrete_amigavel':
+        return `Olá, ${nomeCliente}! Tudo bem? ${EMOJI_SMILE}\n\nPassando para lembrar que a *${cobranca.descricao}* (Mês Ref: *${mesRef}*) no valor de *${valorFormatado}* ${verboVencer} *${dataVencimentoBR}*.\n\n📱 *Chave PIX (Toque para copiar):*\n\`${chavePix}\` \n\n(Caso já tenha efetuado o pagamento, por favor desconsidere esta mensagem). Muito obrigado! - _${nomeEmpresa}_`;
+
+      case 'dia_vencimento':
+        return `Olá, ${nomeCliente}! ${EMOJI_BELL}\n\nLembramos que a *${cobranca.descricao}* (Mês Ref: *${mesRef}*) no valor de *${valorFormatado}* vence *HOJE (${dataVencimentoBR})*.\n\n${EMOJI_MONEY} *Chave PIX (Toque para copiar):*\n\`${chavePix}\` \n\nApós o pagamento, gentileza enviar o comprovante por aqui. Muito obrigado! - _${nomeEmpresa}_`;
+
+      case 'em_atraso':
+        return `Olá, ${nomeCliente}.\n\nIdentificamos em nosso sistema uma pendência em aberto referente a *${cobranca.descricao}* (Mês Ref: *${mesRef}*) no valor de *${valorFormatado}*, vencida em *${dataVencimentoBR}*.\n\n📱 *Chave PIX (Toque para copiar):*\n\`${chavePix}\` \n\n(Caso já tenha efetuado o pagamento, por favor desconsidere esta mensagem). Muito obrigado! - _${nomeEmpresa}_`;
+
+      case 'recibo': {
+        const dataPagto = cobranca.dataPagamento ? formatDateBR(cobranca.dataPagamento) : formatDateBR(new Date().toISOString().split('T')[0]);
+        const docPagador = cobranca.clienteDocumento ? ` (CPF/CNPJ: ${cobranca.clienteDocumento})` : '';
+        const formaPagtoStr = cobranca.formaPagamento ? cobranca.formaPagamento.toUpperCase() : 'PIX';
+
+        return `🧾 *RECIBO DE QUITAÇÃO* 🧾\n━━━━━━━━━━━━━━━━━━━━━\n\n🏢 *EMISSOR:* ${nomeEmpresa}\n📄 *CNPJ:* ${cnpjEmpresaFormat}\n\n👤 *PAGADOR:* ${cobranca.clienteNome}${docPagador}\n\n📌 *REFERENTE A:* ${cobranca.descricao}\n📅 *MÊS DE REFERÊNCIA:* ${mesRef}\n💵 *VALOR QUITADO:* *${valorFormatado}*\n🗓️ *DATA DO PAGAMENTO:* ${dataPagto}\n💳 *FORMA DE PAGAMENTO:* ${formaPagtoStr}\n🟢 *STATUS:* *QUITADO INTEGRALMENTE*\n\n━━━━━━━━━━━━━━━━━━━━━\n✍️ *DECLARAÇÃO:* _Declaramos para os devidos fins ter recebido a quantia acima discriminada, dando por este termo a devida e plena quitação._\n\n✨ _Agradecemos a sua preferência!_\n*${nomeEmpresa}*`;
+      }
+
+      default:
+        return `Olá ${nomeCliente}, referente à cobrança de ${valorFormatado}.`;
+    }
+  }
+
+  // Se forem MÚLTIPLAS cobranças (length > 1)
+  const totalValor = cobrancas.reduce((sum, c) => sum + c.valor, 0);
+  const totalValorFormatado = formatCurrency(totalValor);
+  const descricaoGeral = primeira.descricao || 'Mensalidade do Sistema';
+
+  const listaItensMsg = cobrancas.map(c => {
+    const mesRef = c.mesReferencia || (c.dataVencimento ? `${c.dataVencimento.split('-')[1]}/${c.dataVencimento.split('-')[0]}` : '');
+    let dataVencBR = formatDateBR(c.dataVencimento);
+    if (mesRef && mesRef.includes('/') && mesRef.length === 7) {
+      dataVencBR = `05/${mesRef}`;
+    }
+    const valFmt = formatCurrency(c.valor);
+    const isAtrasado = c.status === 'atrasado';
+    const statusTag = isAtrasado ? `Vencida em ${dataVencBR}` : `Vencimento: ${dataVencBR}`;
+    return `• Mês Ref: *${mesRef}* - *${valFmt}* (${statusTag})`;
+  }).join('\n');
+
   switch (template) {
     case 'lembrete_amigavel':
-      return `Olá, ${nomeCliente}! Tudo bem? ${EMOJI_SMILE}\n\nPassando para lembrar que a *${cobranca.descricao}* (Mês Ref: *${mesRef}*) no valor de *${valorFormatado}* ${verboVencer} *${dataVencimentoBR}*.\n\n📱 *Chave PIX (Toque para copiar):*\n\`${chavePix}\` \n\n(Caso já tenha efetuado o pagamento, por favor desconsidere esta mensagem). Muito obrigado! - _${nomeEmpresa}_`;
+      return `Olá, ${nomeCliente}! Tudo bem? ${EMOJI_SMILE}\n\nPassando para lembrar referente às pendências em aberto de *${descricaoGeral}*:\n\n${listaItensMsg}\n\n💰 *VALOR TOTAL (${cobrancas.length} mensalidades):* *${totalValorFormatado}*\n\n📱 *Chave PIX (Toque para copiar):*\n\`${chavePix}\` \n\n(Caso já tenha efetuado o pagamento, por favor desconsidere esta mensagem). Muito obrigado! - _${nomeEmpresa}_`;
 
     case 'dia_vencimento':
-      return `Olá, ${nomeCliente}! ${EMOJI_BELL}\n\nLembramos que a *${cobranca.descricao}* (Mês Ref: *${mesRef}*) no valor de *${valorFormatado}* vence *HOJE (${dataVencimentoBR})*.\n\n${EMOJI_MONEY} *Chave PIX (Toque para copiar):*\n\`${chavePix}\` \n\nApós o pagamento, gentileza enviar o comprovante por aqui. Muito obrigado! - _${nomeEmpresa}_`;
+      return `Olá, ${nomeCliente}! ${EMOJI_BELL}\n\nLembramos que consta em aberto as seguintes mensalidades de *${descricaoGeral}*:\n\n${listaItensMsg}\n\n💸 *VALOR TOTAL (${cobrancas.length} mensalidades):* *${totalValorFormatado}*\n\n📱 *Chave PIX (Toque para copiar):*\n\`${chavePix}\` \n\nApós o pagamento, gentileza enviar o comprovante por aqui. Muito obrigado! - _${nomeEmpresa}_`;
 
     case 'em_atraso':
-      return `Olá, ${nomeCliente}.\n\nIdentificamos em nosso sistema uma pendência em aberto referente a *${cobranca.descricao}* (Mês Ref: *${mesRef}*) no valor de *${valorFormatado}*, vencida em *${dataVencimentoBR}*.\n\n📱 *Chave PIX (Toque para copiar):*\n\`${chavePix}\` \n\n(Caso já tenha efetuado o pagamento, por favor desconsidere esta mensagem). Muito obrigado! - _${nomeEmpresa}_`;
+      return `Olá, ${nomeCliente}.\n\nIdentificamos em nosso sistema *${cobrancas.length} mensalidades em aberto* referente a *${descricaoGeral}*:\n\n${listaItensMsg}\n\n💰 *VALOR TOTAL DOS DÉBITOS:* *${totalValorFormatado}*\n\n📱 *Chave PIX (Toque para copiar):*\n\`${chavePix}\` \n\n(Caso já tenha efetuado o pagamento, por favor desconsidere esta mensagem). Muito obrigado! - _${nomeEmpresa}_`;
 
     case 'recibo': {
-      const dataPagto = cobranca.dataPagamento ? formatDateBR(cobranca.dataPagamento) : formatDateBR(new Date().toISOString().split('T')[0]);
-      const docPagador = cobranca.clienteDocumento ? ` (CPF/CNPJ: ${cobranca.clienteDocumento})` : '';
-      const formaPagtoStr = cobranca.formaPagamento ? cobranca.formaPagamento.toUpperCase() : 'PIX';
+      const docPagador = primeira.clienteDocumento ? ` (CPF/CNPJ: ${primeira.clienteDocumento})` : '';
+      const dataPagto = primeira.dataPagamento ? formatDateBR(primeira.dataPagamento) : formatDateBR(new Date().toISOString().split('T')[0]);
+      const formaPagtoStr = primeira.formaPagamento ? primeira.formaPagamento.toUpperCase() : 'PIX';
 
-      return `🧾 *RECIBO DE QUITAÇÃO* 🧾\n━━━━━━━━━━━━━━━━━━━━━\n\n🏢 *EMISSOR:* ${nomeEmpresa}\n📄 *CNPJ:* ${cnpjEmpresaFormat}\n\n👤 *PAGADOR:* ${cobranca.clienteNome}${docPagador}\n\n📌 *REFERENTE A:* ${cobranca.descricao}\n📅 *MÊS DE REFERÊNCIA:* ${mesRef}\n💵 *VALOR QUITADO:* *${valorFormatado}*\n🗓️ *DATA DO PAGAMENTO:* ${dataPagto}\n💳 *FORMA DE PAGAMENTO:* ${formaPagtoStr}\n🟢 *STATUS:* *QUITADO INTEGRALMENTE*\n\n━━━━━━━━━━━━━━━━━━━━━\n✍️ *DECLARAÇÃO:* _Declaramos para os devidos fins ter recebido a quantia acima discriminada, dando por este termo a devida e plena quitação._\n\n✨ _Agradecemos a sua preferência!_\n*${nomeEmpresa}*`;
+      const listaItensRecibo = cobrancas.map(c => {
+        const mesRef = c.mesReferencia || (c.dataVencimento ? `${c.dataVencimento.split('-')[1]}/${c.dataVencimento.split('-')[0]}` : '');
+        return `• Mês Ref: ${mesRef} - ${formatCurrency(c.valor)}`;
+      }).join('\n');
+
+      return `🧾 *RECIBO DE QUITAÇÃO MÚLTIPLA* 🧾\n━━━━━━━━━━━━━━━━━━━━━\n\n🏢 *EMISSOR:* ${nomeEmpresa}\n📄 *CNPJ:* ${cnpjEmpresaFormat}\n\n👤 *PAGADOR:* ${nomeCliente}${docPagador}\n\n📌 *REFERENTE A:* ${descricaoGeral} (${cobrancas.length} mensalidades)\n${listaItensRecibo}\n\n💵 *VALOR TOTAL QUITADO:* *${totalValorFormatado}*\n🗓️ *DATA DO PAGAMENTO:* ${dataPagto}\n💳 *FORMA DE PAGAMENTO:* ${formaPagtoStr}\n🟢 *STATUS:* *QUITADO INTEGRALMENTE*\n\n━━━━━━━━━━━━━━━━━━━━━\n✍️ *DECLARAÇÃO:* _Declaramos para os devidos fins ter recebido a quantia acima discriminada, dando por este termo a devida e plena quitação._\n\n✨ _Agradecemos a sua preferência!_\n*${nomeEmpresa}*`;
     }
 
     default:
-      return `Olá ${nomeCliente}, referente à cobrança de ${valorFormatado}.`;
+      return `Olá ${nomeCliente}, referente a ${cobrancas.length} cobranças no total de ${totalValorFormatado}.`;
   }
 }
 

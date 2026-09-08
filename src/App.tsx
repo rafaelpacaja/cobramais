@@ -707,6 +707,7 @@ export const App: React.FC = () => {
         isOpen={!!whatsAppCobranca}
         onClose={() => setWhatsAppCobranca(null)}
         cobranca={whatsAppCobranca}
+        todasCobrancas={cobrancas}
         clientes={clientes}
         nomeEmpresa={config.nomeEmpresa}
         chavePixPadrao={config.chavePixPadrao}

@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { X, MessageSquare, Send, Copy, Check, Sparkles, Phone, Users, Briefcase, Smartphone } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { X, MessageSquare, Send, Copy, Check, Sparkles, Phone, Users, Briefcase, Smartphone, AlertCircle, CheckSquare, Square } from 'lucide-react';
 import { Cobranca, Cliente, WhatsAppTemplateType } from '../types';
 import { 
   generateWhatsAppMessage, 
   openWhatsApp, 
   formatCurrency, 
+  formatDateBR,
   TipoWhatsAppTarget 
 } from '../utils/whatsapp';
 
@@ -12,6 +13,7 @@ interface WhatsAppModalProps {
   isOpen: boolean;
   onClose: () => void;
   cobranca: Cobranca | null;
+  todasCobrancas?: Cobranca[];
   clientes?: Cliente[];
   nomeEmpresa: string;
   chavePixPadrao: string;
@@ -22,12 +24,63 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
   isOpen,
   onClose,
   cobranca,
+  todasCobrancas = [],
   clientes = [],
   nomeEmpresa,
   chavePixPadrao,
   cnpjEmpresa
 }) => {
   if (!isOpen || !cobranca) return null;
+
+  // Busca todas as cobranças em aberto (atrasadas ou pendentes) deste mesmo cliente
+  const cobrancasAbertasDoCliente = useMemo(() => {
+    if (!cobranca || !todasCobrancas || todasCobrancas.length === 0) return [cobranca];
+    
+    const keyNome = cobranca.clienteNome.trim().toLowerCase();
+    const abertas = todasCobrancas.filter(c => 
+      (c.id === cobranca.id || c.clienteId === cobranca.clienteId || c.clienteNome.trim().toLowerCase() === keyNome) &&
+      (c.status === 'pendente' || c.status === 'atrasado' || c.id === cobranca.id)
+    );
+
+    // Ordena por data de vencimento (as mais antigas primeiro)
+    return abertas.sort((a, b) => a.dataVencimento.localeCompare(b.dataVencimento));
+  }, [cobranca, todasCobrancas]);
+
+  // IDs selecionados para cobrança (por padrão inicia com a cobrança clicada)
+  const [selectedIds, setSelectedIds] = useState<string[]>([cobranca.id]);
+
+  useEffect(() => {
+    if (cobranca) {
+      setSelectedIds([cobranca.id]);
+    }
+  }, [cobranca]);
+
+  const toggleSelectId = (id: string) => {
+    setSelectedIds(prev => {
+      if (prev.includes(id)) {
+        if (prev.length === 1) return prev; // Mantém pelo menos um selecionado
+        return prev.filter(item => item !== id);
+      } else {
+        return [...prev, id];
+      }
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedIds.length === cobrancasAbertasDoCliente.length) {
+      setSelectedIds([cobranca.id]);
+    } else {
+      setSelectedIds(cobrancasAbertasDoCliente.map(c => c.id));
+    }
+  };
+
+  const selectedCobrancas = useMemo(() => {
+    return cobrancasAbertasDoCliente.filter(c => selectedIds.includes(c.id));
+  }, [cobrancasAbertasDoCliente, selectedIds]);
+
+  const totalValorSelecionado = useMemo(() => {
+    return selectedCobrancas.reduce((sum, c) => sum + c.valor, 0);
+  }, [selectedCobrancas]);
 
   // Seleciona template padrão inteligente com base no status
   const defaultTemplate: WhatsAppTemplateType = 
@@ -46,7 +99,8 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
 
   useEffect(() => {
     if (cobranca) {
-      const msg = generateWhatsAppMessage(cobranca, selectedTemplate, nomeEmpresa, chavePixPadrao, cnpjEmpresa);
+      const targetCobrancas = selectedCobrancas.length > 0 ? selectedCobrancas : [cobranca];
+      const msg = generateWhatsAppMessage(targetCobrancas, selectedTemplate, nomeEmpresa, chavePixPadrao, cnpjEmpresa);
       setCustomMessage(msg);
 
       let rawTel = cobranca.clienteTelefone || '';
@@ -60,7 +114,7 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
       }
       setPhoneInput(rawTel);
     }
-  }, [cobranca, selectedTemplate, nomeEmpresa, chavePixPadrao, cnpjEmpresa, clientes]);
+  }, [cobranca, selectedCobrancas, selectedTemplate, nomeEmpresa, chavePixPadrao, cnpjEmpresa, clientes]);
 
   const handleCopyPixKeyOnly = () => {
     try {
@@ -105,7 +159,10 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
                 Enviar Lembrete no WhatsApp
               </h2>
               <p className="text-xs text-slate-400">
-                {cobranca.clienteNome} • {formatCurrency(cobranca.valor)}
+                {cobranca.clienteNome} • <span className="text-emerald-400 font-extrabold">{formatCurrency(totalValorSelecionado)}</span>
+                {selectedCobrancas.length > 1 && (
+                  <span className="ml-1 text-slate-300 font-bold">({selectedCobrancas.length} meses)</span>
+                )}
               </p>
             </div>
           </div>
@@ -117,6 +174,77 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Alerta de Múltiplas Parcelas do Cliente se houver mais de 1 em aberto */}
+        {cobrancasAbertasDoCliente.length > 1 && (
+          <div className="p-3 bg-amber-500/10 border border-amber-500/25 rounded-2xl space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-extrabold text-amber-300 flex items-center gap-1.5">
+                <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                {cobrancasAbertasDoCliente.length} mensalidades em aberto deste cliente:
+              </span>
+              <button
+                type="button"
+                onClick={handleSelectAll}
+                className="text-[10px] font-black text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded-lg border border-amber-500/30 hover:bg-amber-500/30 transition-all"
+              >
+                {selectedIds.length === cobrancasAbertasDoCliente.length ? 'Cobrar Apenas Esta' : 'Cobrar Todas'}
+              </button>
+            </div>
+
+            <p className="text-[11px] text-slate-300">
+              Clique no mês para incluir ou remover da mensagem de cobrança:
+            </p>
+
+            {/* Lista com Seleção de Parcelas */}
+            <div className="space-y-1.5 pt-1 max-h-40 overflow-y-auto pr-1">
+              {cobrancasAbertasDoCliente.map((item) => {
+                const isSelected = selectedIds.includes(item.id);
+                const mesRefStr = item.mesReferencia || (item.dataVencimento ? `${item.dataVencimento.split('-')[1]}/${item.dataVencimento.split('-')[0]}` : '-');
+
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => toggleSelectId(item.id)}
+                    className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+                      isSelected
+                        ? 'bg-emerald-950/40 border-emerald-500/60 text-emerald-200 shadow-md'
+                        : 'bg-slate-950/80 border-slate-800/80 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      {isSelected ? (
+                        <CheckSquare className="w-4 h-4 text-emerald-400 shrink-0" />
+                      ) : (
+                        <Square className="w-4 h-4 text-slate-500 shrink-0" />
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold truncate">
+                          Mês Ref: <span className="text-white font-extrabold">{mesRefStr}</span>
+                          <span className="text-[10px] text-slate-400 font-semibold ml-2">
+                            (Venc: {formatDateBR(item.dataVencimento)})
+                          </span>
+                        </p>
+                        <p className="text-[10px] text-slate-400 truncate">{item.descricao}</p>
+                      </div>
+                    </div>
+
+                    <div className="text-right shrink-0">
+                      <span className="text-xs font-extrabold text-emerald-400 block">
+                        {formatCurrency(item.valor)}
+                      </span>
+                      <span className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded ${
+                        item.status === 'atrasado' ? 'bg-rose-500/20 text-rose-300' : 'bg-amber-500/20 text-amber-300'
+                      }`}>
+                        {item.status === 'atrasado' ? 'Atrasado' : 'A Vencer'}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Escolha do Aplicativo WhatsApp (Business, Normal ou Seletor) */}
         <div className="space-y-1.5">
