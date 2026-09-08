@@ -142,12 +142,46 @@ export async function syncWithNeonDatabase() {
     if (!res.ok) return null;
     const data = await res.json();
     if (data && data.connected) {
-      if (Array.isArray(data.clientes) && data.clientes.length > 0) {
-        saveClientes(data.clientes, false);
+      // 1. Mescla Clientes (preservando locais e remotos)
+      const localClientes = getClientes();
+      const cliMap = new Map<string, Cliente>();
+      if (Array.isArray(data.clientes)) {
+        data.clientes.forEach((c: Cliente) => cliMap.set(c.id, c));
       }
-      if (Array.isArray(data.cobrancas) && data.cobrancas.length > 0) {
-        saveCobrancas(data.cobrancas, false);
+      localClientes.forEach((c: Cliente) => {
+        if (!cliMap.has(c.id)) {
+          cliMap.set(c.id, c);
+        }
+      });
+      const mergedClientes = Array.from(cliMap.values());
+      saveClientes(mergedClientes, false);
+
+      // 2. Mescla Cobranças (preservando baixas e lançamentos locais)
+      const localCobrancas = getCobrancas();
+      const cobMap = new Map<string, Cobranca>();
+      if (Array.isArray(data.cobrancas)) {
+        data.cobrancas.forEach((c: Cobranca) => cobMap.set(c.id, c));
       }
+      localCobrancas.forEach((c: Cobranca) => {
+        const existing = cobMap.get(c.id);
+        if (!existing) {
+          // Cobrança feita localmente que não estava na nuvem -> Mantém!
+          cobMap.set(c.id, c);
+        } else {
+          // Se localmente foi baixado/pago ou alterado, preserva o status pago local
+          if (c.status === 'pago' || c.status === 'cancelado') {
+            cobMap.set(c.id, {
+              ...existing,
+              status: c.status,
+              dataPagamento: c.dataPagamento || existing.dataPagamento,
+              formaPagamento: c.formaPagamento || existing.formaPagamento
+            });
+          }
+        }
+      });
+      const mergedCobrancas = Array.from(cobMap.values());
+      saveCobrancas(mergedCobrancas, false);
+
       if (data.config) {
         const localConfig = getConfig();
         const mergedCatMap = new Map<string, string>();
@@ -165,7 +199,15 @@ export async function syncWithNeonDatabase() {
         };
         saveConfig(mergedConfig, false);
       }
-      return data;
+
+      // Envia o resultado mesclado de volta para a nuvem garantir que Neon tem TUDO
+      pushToNeonDatabase();
+
+      return {
+        ...data,
+        clientes: mergedClientes,
+        cobrancas: mergedCobrancas
+      };
     }
   } catch (err) {
     // Ambiente local sem backend de produção
