@@ -269,15 +269,20 @@ export function getCobrancas(): Cobranca[] {
 
     let isModified = false;
     list = list.map(c => {
-      if (c.categoria === 'Serviços' || c.categoria === 'serviços' || !c.categoria) {
+      let item = { ...c };
+      if (item.status === 'pago' && (!item.dataPagamento || !item.dataPagamento.trim())) {
         isModified = true;
-        return { ...c, categoria: 'Mensalidade' };
+        item.dataPagamento = item.createdAt ? item.createdAt.split('T')[0] : (item.dataVencimento || getTodayString());
       }
-      if (c.categoria === 'implantação/instalação' || c.categoria === 'Implantação/Instalação') {
+      if (item.categoria === 'Serviços' || item.categoria === 'serviços' || !item.categoria) {
         isModified = true;
-        return { ...c, categoria: 'Implantação' };
+        item.categoria = 'Mensalidade';
       }
-      return c;
+      if (item.categoria === 'implantação/instalação' || item.categoria === 'Implantação/Instalação') {
+        isModified = true;
+        item.categoria = 'Implantação';
+      }
+      return item;
     });
 
     const updatedList = updateOverdueStatuses(list);

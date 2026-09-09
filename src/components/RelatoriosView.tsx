@@ -123,6 +123,56 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
     return tipoFiltro === 'personalizado' && Boolean(dataInicio && dataFim && dataInicio > dataFim);
   }, [tipoFiltro, dataInicio, dataFim]);
 
+  // Auxiliar robusto para verificar se uma string de data pertence ao Mês/Ano especificado
+  const isDateInMonth = (dateStr: string | undefined, mesRefMMYYYY: string, yearMonthISO: string): boolean => {
+    if (!dateStr) return false;
+    const str = dateStr.trim();
+    if (!str) return false;
+
+    if (yearMonthISO && str.startsWith(yearMonthISO)) return true;
+    if (mesRefMMYYYY && str.includes(mesRefMMYYYY)) return true;
+
+    if (str.includes('-')) {
+      const parts = str.split('-');
+      if (parts.length >= 2) {
+        const p1 = parts[0];
+        const p2 = parts[1];
+        if (p1.length === 4) {
+          const ym = `${p1}-${p2.padStart(2, '0')}`;
+          if (ym === yearMonthISO) return true;
+        }
+        if (parts.length >= 3 && parts[2].slice(0, 4).length === 4) {
+          const y = parts[2].slice(0, 4);
+          const m = parts[1].padStart(2, '0');
+          if (`${m}/${y}` === mesRefMMYYYY || `${y}-${m}` === yearMonthISO) return true;
+        }
+      }
+    }
+
+    if (str.includes('/')) {
+      const parts = str.split('/');
+      if (parts.length === 3) {
+        const m = parts[1].padStart(2, '0');
+        const y = parts[2].slice(0, 4);
+        if (`${m}/${y}` === mesRefMMYYYY || `${y}-${m}` === yearMonthISO) return true;
+      } else if (parts.length === 2) {
+        const m = parts[0].padStart(2, '0');
+        const y = parts[1].slice(0, 4);
+        if (`${m}/${y}` === mesRefMMYYYY || `${y}-${m}` === yearMonthISO) return true;
+      }
+    }
+
+    return false;
+  };
+
+  const getEffectivePaymentDate = (c: Cobranca): string | undefined => {
+    if (c.dataPagamento && c.dataPagamento.trim()) return c.dataPagamento;
+    if (c.status === 'pago') {
+      return c.createdAt ? c.createdAt.split('T')[0] : c.dataVencimento;
+    }
+    return undefined;
+  };
+
   const cobrancasFiltradas = useMemo(() => {
     const list = cobrancas.filter(c => {
       // 1. Filtro de Categorias (Multi-Seleção)
@@ -142,16 +192,17 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
       // 3. Filtro de Período
       if (tipoFiltro === 'todos') return true;
 
+      const dtPg = getEffectivePaymentDate(c);
+
       if (tipoFiltro === 'mes_atual') {
-        const isPaidInPeriod = c.status === 'pago' && Boolean(c.dataPagamento && c.dataPagamento.startsWith(currentYearMonth));
-        const isDueInPeriod = c.mesReferencia === currentMesRef || c.dataVencimento.startsWith(currentYearMonth);
+        const isPaidInPeriod = c.status === 'pago' && Boolean(dtPg && isDateInMonth(dtPg, currentMesRef, currentYearMonth));
+        const isDueInPeriod = c.mesReferencia === currentMesRef || isDateInMonth(c.dataVencimento, currentMesRef, currentYearMonth);
 
         if (criterioData === 'apenas_quitacao') {
           return isPaidInPeriod;
         } else if (criterioData === 'vencimento_referencia') {
           return isDueInPeriod;
         } else {
-          // 'quitação_e_vencimento' (Padrão) -> Inclui quitações do mês atual (mesmo de débitos anteriores) + cobranças do mês
           return isPaidInPeriod || isDueInPeriod;
         }
       }
@@ -161,8 +212,8 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
         const parts = mesEspecificoSel.split('/');
         const isoPrefix = parts.length === 2 ? `${parts[1]}-${parts[0]}` : '';
 
-        const isPaidInPeriod = c.status === 'pago' && Boolean(c.dataPagamento && isoPrefix && c.dataPagamento.startsWith(isoPrefix));
-        const isDueInPeriod = c.mesReferencia === mesEspecificoSel || (isoPrefix && c.dataVencimento.startsWith(isoPrefix));
+        const isPaidInPeriod = c.status === 'pago' && Boolean(dtPg && isDateInMonth(dtPg, mesEspecificoSel, isoPrefix));
+        const isDueInPeriod = c.mesReferencia === mesEspecificoSel || isDateInMonth(c.dataVencimento, mesEspecificoSel, isoPrefix);
 
         if (criterioData === 'apenas_quitacao') {
           return isPaidInPeriod;
@@ -175,10 +226,11 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
 
       if (tipoFiltro === 'personalizado') {
         if (isPeriodoInvalido) return false;
+
         const isPaidInPeriod = c.status === 'pago' && Boolean(
-          c.dataPagamento && 
-          (!dataInicio || c.dataPagamento >= dataInicio) && 
-          (!dataFim || c.dataPagamento <= dataFim)
+          dtPg && 
+          (!dataInicio || dtPg >= dataInicio) && 
+          (!dataFim || dtPg <= dataFim)
         );
         const isDueInPeriod = (!dataInicio || c.dataVencimento >= dataInicio) && (!dataFim || c.dataVencimento <= dataFim);
 
