@@ -165,6 +165,35 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
     return false;
   };
 
+  const parseToISODate = (dateStr: string | undefined): string => {
+    if (!dateStr) return '';
+    const str = dateStr.trim();
+    if (!str) return '';
+
+    if (str.includes('-')) {
+      const cleanIso = str.split('T')[0];
+      const parts = cleanIso.split('-');
+      if (parts.length >= 3 && parts[0].length === 4) {
+        const y = parts[0];
+        const m = parts[1].padStart(2, '0');
+        const d = parts[2].padStart(2, '0');
+        return `${y}-${m}-${d}`;
+      }
+    }
+
+    if (str.includes('/')) {
+      const parts = str.split('/');
+      if (parts.length === 3) {
+        const d = parts[0].padStart(2, '0');
+        const m = parts[1].padStart(2, '0');
+        const y = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
+        return `${y}-${m}-${d}`;
+      }
+    }
+
+    return str.slice(0, 10);
+  };
+
   const getEffectivePaymentDate = (c: Cobranca): string | undefined => {
     if (c.dataPagamento && c.dataPagamento.trim()) return c.dataPagamento;
     if (c.status === 'pago') {
@@ -227,12 +256,19 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
       if (tipoFiltro === 'personalizado') {
         if (isPeriodoInvalido) return false;
 
+        const dtPgISO = parseToISODate(dtPg);
+        const dtVencISO = parseToISODate(c.dataVencimento);
+
         const isPaidInPeriod = c.status === 'pago' && Boolean(
-          dtPg && 
-          (!dataInicio || dtPg >= dataInicio) && 
-          (!dataFim || dtPg <= dataFim)
+          dtPgISO && 
+          (!dataInicio || dtPgISO >= dataInicio) && 
+          (!dataFim || dtPgISO <= dataFim)
         );
-        const isDueInPeriod = (!dataInicio || c.dataVencimento >= dataInicio) && (!dataFim || c.dataVencimento <= dataFim);
+        const isDueInPeriod = Boolean(
+          dtVencISO &&
+          (!dataInicio || dtVencISO >= dataInicio) && 
+          (!dataFim || dtVencISO <= dataFim)
+        );
 
         if (criterioData === 'apenas_quitacao') {
           return isPaidInPeriod;
