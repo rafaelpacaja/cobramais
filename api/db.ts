@@ -201,6 +201,19 @@ export default async function handler(req: any, res: any) {
       const body = req.body || {};
       const { action, config, clientes, cobrancas, email, senha, senhaAtual, novaSenha, nome, empresa, cnpj, telefone, cobrancaId, clienteId } = body;
 
+      // Estorno específico de cobrança no Neon
+      if (action === 'estornar_cobranca') {
+        if (cobrancaId) {
+          const novoStatus = body.status || 'atrasado';
+          await sql`
+            UPDATE cobrancas
+            SET status = ${novoStatus}, data_pagamento = NULL
+            WHERE id = ${cobrancaId};
+          `;
+        }
+        return res.status(200).json({ success: true, message: 'Cobrança estornada no Neon DB.' });
+      }
+
       // Exclusão específica de cobrança no Neon
       if (action === 'delete_cobranca') {
         if (cobrancaId) {
@@ -337,53 +350,49 @@ export default async function handler(req: any, res: any) {
         `;
       }
 
-      // Sincroniza Clientes (Upsert)
-      if (Array.isArray(clientes)) {
-        for (const cli of clientes) {
-          await sql`
-            INSERT INTO clientes (id, nome, telefone, email, documento, cidade, observacoes, created_at)
-            VALUES (${cli.id}, ${cli.nome}, ${cli.telefone || ''}, ${cli.email || ''}, ${cli.documento || ''}, ${cli.cidade || 'PACAJÁ'}, ${cli.observacoes || ''}, ${cli.createdAt || new Date().toISOString()})
-            ON CONFLICT (id) DO UPDATE SET
-              nome = EXCLUDED.nome,
-              telefone = EXCLUDED.telefone,
-              email = EXCLUDED.email,
-              documento = EXCLUDED.documento,
-              cidade = EXCLUDED.cidade,
-              observacoes = EXCLUDED.observacoes;
-          `;
-        }
+      // Sincroniza Clientes (Upsert em paralelo)
+      if (Array.isArray(clientes) && clientes.length > 0) {
+        await Promise.all(clientes.map((cli: any) => sql`
+          INSERT INTO clientes (id, nome, telefone, email, documento, cidade, observacoes, created_at)
+          VALUES (${cli.id}, ${cli.nome}, ${cli.telefone || ''}, ${cli.email || ''}, ${cli.documento || ''}, ${cli.cidade || 'PACAJÁ'}, ${cli.observacoes || ''}, ${cli.createdAt || new Date().toISOString()})
+          ON CONFLICT (id) DO UPDATE SET
+            nome = EXCLUDED.nome,
+            telefone = EXCLUDED.telefone,
+            email = EXCLUDED.email,
+            documento = EXCLUDED.documento,
+            cidade = EXCLUDED.cidade,
+            observacoes = EXCLUDED.observacoes;
+        `));
       }
 
-      // Sincroniza Cobranças (Upsert)
-      if (Array.isArray(cobrancas)) {
-        for (const cob of cobrancas) {
-          await sql`
-            INSERT INTO cobrancas (
-              id, cliente_id, cliente_nome, cliente_telefone, cliente_documento,
-              descricao, valor, data_vencimento, data_pagamento, mes_referencia,
-              status, forma_pagamento, chave_pix, categoria, parcela_atual, total_parcelas, created_at
-            )
-            VALUES (
-              ${cob.id}, ${cob.clienteId}, ${cob.clienteNome}, ${cob.clienteTelefone || ''}, ${cob.clienteDocumento || ''},
-              ${cob.descricao}, ${cob.valor}, ${cob.dataVencimento}, ${cob.dataPagamento || null}, ${cob.mesReferencia || null},
-              ${cob.status}, ${cob.formaPagamento}, ${cob.chavePix || null}, ${cob.categoria || null},
-              ${cob.parcelaAtual || null}, ${cob.totalParcelas || null}, ${cob.createdAt || new Date().toISOString()}
-            )
-            ON CONFLICT (id) DO UPDATE SET
-              cliente_nome = EXCLUDED.cliente_nome,
-              cliente_telefone = EXCLUDED.cliente_telefone,
-              cliente_documento = EXCLUDED.cliente_documento,
-              descricao = EXCLUDED.descricao,
-              valor = EXCLUDED.valor,
-              data_vencimento = EXCLUDED.data_vencimento,
-              data_pagamento = EXCLUDED.data_pagamento,
-              mes_referencia = EXCLUDED.mes_referencia,
-              status = EXCLUDED.status,
-              forma_pagamento = EXCLUDED.forma_pagamento,
-              chave_pix = EXCLUDED.chave_pix,
-              categoria = EXCLUDED.categoria;
-          `;
-        }
+      // Sincroniza Cobranças (Upsert em paralelo)
+      if (Array.isArray(cobrancas) && cobrancas.length > 0) {
+        await Promise.all(cobrancas.map((cob: any) => sql`
+          INSERT INTO cobrancas (
+            id, cliente_id, cliente_nome, cliente_telefone, cliente_documento,
+            descricao, valor, data_vencimento, data_pagamento, mes_referencia,
+            status, forma_pagamento, chave_pix, categoria, parcela_atual, total_parcelas, created_at
+          )
+          VALUES (
+            ${cob.id}, ${cob.clienteId}, ${cob.clienteNome}, ${cob.clienteTelefone || ''}, ${cob.clienteDocumento || ''},
+            ${cob.descricao}, ${cob.valor}, ${cob.dataVencimento}, ${cob.dataPagamento || null}, ${cob.mesReferencia || null},
+            ${cob.status}, ${cob.formaPagamento}, ${cob.chavePix || null}, ${cob.categoria || null},
+            ${cob.parcelaAtual || null}, ${cob.totalParcelas || null}, ${cob.createdAt || new Date().toISOString()}
+          )
+          ON CONFLICT (id) DO UPDATE SET
+            cliente_nome = EXCLUDED.cliente_nome,
+            cliente_telefone = EXCLUDED.cliente_telefone,
+            cliente_documento = EXCLUDED.cliente_documento,
+            descricao = EXCLUDED.descricao,
+            valor = EXCLUDED.valor,
+            data_vencimento = EXCLUDED.data_vencimento,
+            data_pagamento = EXCLUDED.data_pagamento,
+            mes_referencia = EXCLUDED.mes_referencia,
+            status = EXCLUDED.status,
+            forma_pagamento = EXCLUDED.forma_pagamento,
+            chave_pix = EXCLUDED.chave_pix,
+            categoria = EXCLUDED.categoria;
+        `));
       }
 
       return res.status(200).json({ connected: true, success: true });

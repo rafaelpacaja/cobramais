@@ -10,6 +10,7 @@ import {
   updateOverdueStatuses,
   syncWithNeonDatabase,
   pushToNeonDatabase,
+  estornarCobrancaInNeon,
   getUsuarioLogado,
   saveUsuarioLogado,
   logoutUsuario,
@@ -363,10 +364,12 @@ export const App: React.FC = () => {
 
     if (confirm(confirmMsg)) {
       const currentDate = getTodayString();
+      let novoStatusCalculado = 'atrasado';
       const updated = cobrancas.map(item => {
         if (item.id === cobrancaId) {
           const venc = item.dataVencimento || currentDate;
           const novoStatus = venc <= currentDate ? ('atrasado' as const) : ('pendente' as const);
+          novoStatusCalculado = novoStatus;
 
           return {
             ...item,
@@ -380,6 +383,7 @@ export const App: React.FC = () => {
       const updatedWithOverdue = updateOverdueStatuses(updated);
       setCobrancas(updatedWithOverdue);
       saveCobrancas(updatedWithOverdue);
+      estornarCobrancaInNeon(cobrancaId, novoStatusCalculado);
       alert(`Sucesso! A baixa do título de ${cob.clienteNome} (R$ ${formatCurrency(cob.valor)}) foi estornada com sucesso.`);
     }
   };

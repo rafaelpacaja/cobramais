@@ -220,6 +220,18 @@ export async function pushToNeonDatabase() {
   }
 }
 
+export async function estornarCobrancaInNeon(cobrancaId: string, status = 'atrasado') {
+  try {
+    await fetch('/api/db', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'estornar_cobranca', cobrancaId, status })
+    });
+  } catch (err) {
+    // Falha silenciosa em caso de offline
+  }
+}
+
 export async function deleteCobrancaFromNeon(cobrancaId: string) {
   try {
     await fetch('/api/db', {
