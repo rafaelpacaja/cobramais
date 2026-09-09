@@ -142,33 +142,12 @@ export async function syncWithNeonDatabase() {
     if (!res.ok) return null;
     const data = await res.json();
     if (data && data.connected) {
-      // 1. Mescla Clientes (preservando locais e remotos)
-      const localClientes = getClientes();
-      const cliMap = new Map<string, Cliente>();
-      if (Array.isArray(data.clientes)) {
-        data.clientes.forEach((c: Cliente) => cliMap.set(c.id, c));
-      }
-      localClientes.forEach((c: Cliente) => {
-        if (!cliMap.has(c.id)) {
-          cliMap.set(c.id, c);
-        }
-      });
-      const mergedClientes = Array.from(cliMap.values());
+      // 1. Sincroniza Clientes (Neon DB é a fonte da verdade)
+      const mergedClientes = Array.isArray(data.clientes) ? data.clientes : getClientes();
       saveClientes(mergedClientes, false);
 
-      // 2. Mescla Cobranças (Neon DB é a fonte da verdade para cobranças já sincronizadas)
-      const localCobrancas = getCobrancas();
-      const cobMap = new Map<string, Cobranca>();
-      if (Array.isArray(data.cobrancas)) {
-        data.cobrancas.forEach((c: Cobranca) => cobMap.set(c.id, c));
-      }
-      localCobrancas.forEach((c: Cobranca) => {
-        if (!cobMap.has(c.id)) {
-          // Cobrança feita localmente enquanto offline que ainda não estava na nuvem -> Mantém!
-          cobMap.set(c.id, c);
-        }
-      });
-      const mergedCobrancas = Array.from(cobMap.values());
+      // 2. Sincroniza Cobranças (Neon DB é a fonte da verdade)
+      const mergedCobrancas = Array.isArray(data.cobrancas) ? data.cobrancas : getCobrancas();
       saveCobrancas(mergedCobrancas, false);
 
       if (data.config) {
@@ -188,9 +167,6 @@ export async function syncWithNeonDatabase() {
         };
         saveConfig(mergedConfig, false);
       }
-
-      // Envia o resultado mesclado de volta para a nuvem garantir que Neon tem TUDO
-      pushToNeonDatabase();
 
       return {
         ...data,
