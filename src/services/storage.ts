@@ -156,26 +156,16 @@ export async function syncWithNeonDatabase() {
       const mergedClientes = Array.from(cliMap.values());
       saveClientes(mergedClientes, false);
 
-      // 2. Mescla Cobranças (preservando baixas e lançamentos locais)
+      // 2. Mescla Cobranças (Neon DB é a fonte da verdade para cobranças já sincronizadas)
       const localCobrancas = getCobrancas();
       const cobMap = new Map<string, Cobranca>();
       if (Array.isArray(data.cobrancas)) {
         data.cobrancas.forEach((c: Cobranca) => cobMap.set(c.id, c));
       }
       localCobrancas.forEach((c: Cobranca) => {
-        const existing = cobMap.get(c.id);
-        if (!existing) {
-          // Cobrança feita localmente que não estava na nuvem -> Mantém!
+        if (!cobMap.has(c.id)) {
+          // Cobrança feita localmente enquanto offline que ainda não estava na nuvem -> Mantém!
           cobMap.set(c.id, c);
-        } else {
-          // Preserva o estado e status da cobrança local (estornos, baixas, cancelamentos e alterações)
-          cobMap.set(c.id, {
-            ...existing,
-            ...c,
-            // Se o status local for pago, preserva dataPagamento local ou remota.
-            // Se o status local for em aberto ou cancelado (ex: estorno), mantém o c.dataPagamento (undefined)
-            dataPagamento: c.status === 'pago' ? (c.dataPagamento || existing.dataPagamento) : c.dataPagamento
-          });
         }
       });
       const mergedCobrancas = Array.from(cobMap.values());
