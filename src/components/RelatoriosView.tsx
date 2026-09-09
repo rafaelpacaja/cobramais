@@ -21,6 +21,7 @@ import { formatCurrency, formatDateBR } from '../utils/whatsapp';
 import { TipoRelatorioPDF } from './RelatorioBaixadasPDFModal';
 
 export type TipoFiltroPeriodo = 'todos' | 'mes_atual' | 'mes_especifico' | 'personalizado';
+export type TipoCriterioData = 'quitação_e_vencimento' | 'apenas_quitacao' | 'vencimento_referencia';
 
 interface RelatoriosViewProps {
   cobrancas: Cobranca[];
@@ -37,7 +38,8 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
   onOpenRelatorioPDF,
   onOpenReciboAvulso
 }) => {
-  const [tipoFiltro, setTipoFiltro] = useState<TipoFiltroPeriodo>('todos');
+  const [tipoFiltro, setTipoFiltro] = useState<TipoFiltroPeriodo>('mes_atual');
+  const [criterioData, setCriterioData] = useState<TipoCriterioData>('quitação_e_vencimento');
   const [selectedCategorias, setSelectedCategorias] = useState<string[]>([]);
   const [selectedCidades, setSelectedCidades] = useState<string[]>([]);
 
@@ -86,7 +88,7 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
     return Array.from(setCat).sort((a, b) => a.localeCompare(b, 'pt-BR'));
   }, [cobrancas]);
 
-  // Extrai lista única de Meses de Referência das cobranças cadastradas
+  // Extrai lista única de Meses de Referência e de Quitação das cobranças cadastradas
   const mesesDisponiveis = useMemo(() => {
     const setMeses = new Set<string>();
     cobrancas.forEach(c => {
@@ -94,6 +96,12 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
         setMeses.add(c.mesReferencia.trim());
       } else if (c.dataVencimento && c.dataVencimento.includes('-')) {
         const parts = c.dataVencimento.split('-');
+        if (parts.length === 3) {
+          setMeses.add(`${parts[1]}/${parts[0]}`);
+        }
+      }
+      if (c.dataPagamento && c.dataPagamento.includes('-')) {
+        const parts = c.dataPagamento.split('-');
         if (parts.length === 3) {
           setMeses.add(`${parts[1]}/${parts[0]}`);
         }
@@ -135,22 +143,52 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
       if (tipoFiltro === 'todos') return true;
 
       if (tipoFiltro === 'mes_atual') {
-        return c.mesReferencia === currentMesRef || c.dataVencimento.startsWith(currentYearMonth);
+        const isPaidInPeriod = c.status === 'pago' && Boolean(c.dataPagamento && c.dataPagamento.startsWith(currentYearMonth));
+        const isDueInPeriod = c.mesReferencia === currentMesRef || c.dataVencimento.startsWith(currentYearMonth);
+
+        if (criterioData === 'apenas_quitacao') {
+          return isPaidInPeriod;
+        } else if (criterioData === 'vencimento_referencia') {
+          return isDueInPeriod;
+        } else {
+          // 'quitação_e_vencimento' (Padrão) -> Inclui quitações do mês atual (mesmo de débitos anteriores) + cobranças do mês
+          return isPaidInPeriod || isDueInPeriod;
+        }
       }
 
       if (tipoFiltro === 'mes_especifico') {
         if (!mesEspecificoSel) return true;
         const parts = mesEspecificoSel.split('/');
         const isoPrefix = parts.length === 2 ? `${parts[1]}-${parts[0]}` : '';
-        return c.mesReferencia === mesEspecificoSel || (isoPrefix && c.dataVencimento.startsWith(isoPrefix));
+
+        const isPaidInPeriod = c.status === 'pago' && Boolean(c.dataPagamento && isoPrefix && c.dataPagamento.startsWith(isoPrefix));
+        const isDueInPeriod = c.mesReferencia === mesEspecificoSel || (isoPrefix && c.dataVencimento.startsWith(isoPrefix));
+
+        if (criterioData === 'apenas_quitacao') {
+          return isPaidInPeriod;
+        } else if (criterioData === 'vencimento_referencia') {
+          return isDueInPeriod;
+        } else {
+          return isPaidInPeriod || isDueInPeriod;
+        }
       }
 
       if (tipoFiltro === 'personalizado') {
         if (isPeriodoInvalido) return false;
-        const dataTarget = c.dataPagamento || c.dataVencimento;
-        if (dataInicio && dataTarget < dataInicio) return false;
-        if (dataFim && dataTarget > dataFim) return false;
-        return true;
+        const isPaidInPeriod = c.status === 'pago' && Boolean(
+          c.dataPagamento && 
+          (!dataInicio || c.dataPagamento >= dataInicio) && 
+          (!dataFim || c.dataPagamento <= dataFim)
+        );
+        const isDueInPeriod = (!dataInicio || c.dataVencimento >= dataInicio) && (!dataFim || c.dataVencimento <= dataFim);
+
+        if (criterioData === 'apenas_quitacao') {
+          return isPaidInPeriod;
+        } else if (criterioData === 'vencimento_referencia') {
+          return isDueInPeriod;
+        } else {
+          return isPaidInPeriod || isDueInPeriod;
+        }
       }
 
       return true;
@@ -159,7 +197,7 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
     return list.sort((a, b) => 
       a.clienteNome.trim().localeCompare(b.clienteNome.trim(), 'pt-BR', { sensitivity: 'base' })
     );
-  }, [cobrancas, selectedCategorias, selectedCidades, clienteCidadeMap, tipoFiltro, mesEspecificoSel, dataInicio, dataFim, isPeriodoInvalido, currentMesRef, currentYearMonth]);
+  }, [cobrancas, selectedCategorias, selectedCidades, clienteCidadeMap, tipoFiltro, criterioData, mesEspecificoSel, dataInicio, dataFim, isPeriodoInvalido, currentMesRef, currentYearMonth]);
 
   // Recalcula indicadores para o período filtrado
   const totalRecebido = cobrancasFiltradas.filter(c => c.status === 'pago').reduce((a, c) => a + c.valor, 0);
@@ -191,6 +229,11 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
       }
     }
 
+    let critStr = '';
+    if (criterioData === 'quitação_e_vencimento') critStr = 'Base: Quitação + Ref.';
+    else if (criterioData === 'apenas_quitacao') critStr = 'Base: Apenas Quitação';
+    else critStr = 'Base: Apenas Vencimento';
+
     let catStr = '';
     if (selectedCategorias.length === 1) {
       catStr = `Categoria: ${selectedCategorias[0]}`;
@@ -209,8 +252,8 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
       cidStr = 'Todas as Cidades';
     }
 
-    return `${periodStr} | ${catStr} | ${cidStr}`;
-  }, [tipoFiltro, currentMesRef, mesEspecificoSel, dataInicio, dataFim, isPeriodoInvalido, selectedCategorias, selectedCidades]);
+    return `${periodStr} (${critStr}) | ${catStr} | ${cidStr}`;
+  }, [tipoFiltro, currentMesRef, mesEspecificoSel, criterioData, dataInicio, dataFim, isPeriodoInvalido, selectedCategorias, selectedCidades]);
 
   const handleExportCSV = () => {
     if (isPeriodoInvalido) {
@@ -438,6 +481,58 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({
             )}
           </div>
         )}
+
+        {/* Seletor de Base do Filtro por Data (Quitação x Vencimento) */}
+        <div className="pt-2.5 border-t border-slate-800/60 space-y-1.5">
+          <label className="text-[11px] font-extrabold text-slate-300 flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Base de Filtro Financeiro:</span>
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 text-xs">
+            <button
+              type="button"
+              onClick={() => setCriterioData('quitação_e_vencimento')}
+              className={`py-1.5 px-2.5 rounded-xl font-bold transition-all border text-left flex items-center justify-between cursor-pointer ${
+                criterioData === 'quitação_e_vencimento'
+                  ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-200 shadow-sm'
+                  : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
+              }`}
+              title="Inclui pagamentos quitados no período (mesmo de meses anteriores) + títulos a vencer/vencidos no período"
+            >
+              <span>🟢 Data Quitação + Ref. (Completo)</span>
+              {criterioData === 'quitação_e_vencimento' && <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setCriterioData('apenas_quitacao')}
+              className={`py-1.5 px-2.5 rounded-xl font-bold transition-all border text-left flex items-center justify-between cursor-pointer ${
+                criterioData === 'apenas_quitacao'
+                  ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-200 shadow-sm'
+                  : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
+              }`}
+              title="Considera apenas títulos que foram baixados / quitados na data de pagamento do período"
+            >
+              <span>💸 Apenas Data Quitação</span>
+              {criterioData === 'apenas_quitacao' && <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setCriterioData('vencimento_referencia')}
+              className={`py-1.5 px-2.5 rounded-xl font-bold transition-all border text-left flex items-center justify-between cursor-pointer ${
+                criterioData === 'vencimento_referencia'
+                  ? 'bg-indigo-950/80 border-indigo-500/50 text-indigo-200 shadow-sm'
+                  : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
+              }`}
+              title="Considera apenas cobranças pelo Mês de Referência ou Data de Vencimento"
+            >
+              <span>📅 Apenas Mês/Vencimento</span>
+              {criterioData === 'vencimento_referencia' && <Check className="w-3.5 h-3.5 text-indigo-400 shrink-0" />}
+            </button>
+          </div>
+        </div>
+
         {/* Filtro por Categorias (Multi-Seleção) */}
         <div className="pt-3 border-t border-slate-800/80 space-y-2">
           <div className="flex items-center justify-between">

@@ -152,7 +152,8 @@ export function gerarEImprimirRelatorioPDF(
         let rowBg = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
 
         if (item.status === 'pago') {
-          statusBadgeHtml = `<span style="background: #d1fae5; color: #047857; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 8.5px;">PAGO</span>`;
+          const dtPg = item.dataPagamento ? ` (${formatDateBR(item.dataPagamento)})` : '';
+          statusBadgeHtml = `<span style="background: #d1fae5; color: #047857; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 8.5px;">PAGO${dtPg}</span>`;
         } else if (item.status === 'atrasado') {
           statusBadgeHtml = `<span style="background: #fee2e2; color: #b91c1c; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 8.5px;">ATRASADO</span>`;
           rowBg = '#fff1f2';
@@ -201,7 +202,8 @@ export function gerarEImprimirRelatorioPDF(
       let rowBg = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
 
       if (item.status === 'pago') {
-        statusBadgeHtml = `<span style="background: #d1fae5; color: #047857; font-weight: bold; padding: 1.5px 5px; border-radius: 4px; font-size: 8px;">PAGO</span>`;
+        const dtPg = item.dataPagamento ? ` (${formatDateBR(item.dataPagamento)})` : '';
+        statusBadgeHtml = `<span style="background: #d1fae5; color: #047857; font-weight: bold; padding: 1.5px 5px; border-radius: 4px; font-size: 8px;">PAGO${dtPg}</span>`;
       } else if (item.status === 'atrasado') {
         statusBadgeHtml = `<span style="background: #fee2e2; color: #b91c1c; font-weight: bold; padding: 1.5px 5px; border-radius: 4px; font-size: 8px;">ATRASADO</span>`;
         rowBg = '#fff1f2';
