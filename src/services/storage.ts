@@ -168,15 +168,14 @@ export async function syncWithNeonDatabase() {
           // Cobrança feita localmente que não estava na nuvem -> Mantém!
           cobMap.set(c.id, c);
         } else {
-          // Se localmente foi baixado/pago ou alterado, preserva o status pago local
-          if (c.status === 'pago' || c.status === 'cancelado') {
-            cobMap.set(c.id, {
-              ...existing,
-              status: c.status,
-              dataPagamento: c.dataPagamento || existing.dataPagamento,
-              formaPagamento: c.formaPagamento || existing.formaPagamento
-            });
-          }
+          // Preserva o estado e status da cobrança local (estornos, baixas, cancelamentos e alterações)
+          cobMap.set(c.id, {
+            ...existing,
+            ...c,
+            // Se o status local for pago, preserva dataPagamento local ou remota.
+            // Se o status local for em aberto ou cancelado (ex: estorno), mantém o c.dataPagamento (undefined)
+            dataPagamento: c.status === 'pago' ? (c.dataPagamento || existing.dataPagamento) : c.dataPagamento
+          });
         }
       });
       const mergedCobrancas = Array.from(cobMap.values());

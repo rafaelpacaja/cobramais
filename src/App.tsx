@@ -349,7 +349,7 @@ export const App: React.FC = () => {
   };
 
   const handleMarcarComoCancelado = (cobrancaId: string) => {
-    const updated = cobrancas.map(c => c.id === cobrancaId ? { ...c, status: 'cancelado' as const } : c);
+    const updated = cobrancas.map(c => c.id === cobrancaId ? { ...c, status: 'cancelado' as const, dataPagamento: undefined } : c);
     setCobrancas(updated);
     saveCobrancas(updated);
   };
